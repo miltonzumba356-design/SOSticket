@@ -14,6 +14,7 @@ import { Perfil } from './components/Perfil';
 import { Horas } from './components/Horas';
 import { Calendario } from './components/Calendario';
 import { Register } from './components/Register';
+import { PwaUpdatePrompt } from './components/PwaUpdatePrompt';
 
 // Componente principal da aplicação que gerencia as rotas
 function AppContent() {
@@ -113,6 +114,7 @@ export default function App() {
       <CronometroProvider>
         <AppContent />
       </CronometroProvider>
+      <PwaUpdatePrompt />
     </AuthProvider>
   );
 }

@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCronometro } from '../contexts/CronometroContext';
 import { adminMenu, MenuItem } from '../data/AdminMenu';
 import { notificacoesService } from '../services/api';
+import { whatsappService } from '../services/whatsapp';
 import { Notificacao } from '../types/api';
 import {
   LayoutDashboard,
@@ -50,6 +51,43 @@ export function Layout({ children, paginaAtual, onNavigate }: LayoutProps) {
     logout();
   };
 
+  const obterNotificacoesJaEnviadasWhatsapp = (): Set<string> => {
+    if (!usuario) return new Set();
+    try {
+      const guardado = localStorage.getItem(`whatsapp_notificacoes_enviadas_${usuario.id}`);
+      return new Set(guardado ? JSON.parse(guardado) : []);
+    } catch {
+      return new Set();
+    }
+  };
+
+  const marcarNotificacoesComoEnviadasWhatsapp = (ids: string[]) => {
+    if (!usuario || ids.length === 0) return;
+    try {
+      const enviadas = obterNotificacoesJaEnviadasWhatsapp();
+      ids.forEach((id) => enviadas.add(id));
+      localStorage.setItem(`whatsapp_notificacoes_enviadas_${usuario.id}`, JSON.stringify(Array.from(enviadas)));
+    } catch {
+      // Falha ao gravar no localStorage não deve impedir o funcionamento das notificações.
+    }
+  };
+
+  const dispararNotificacoesWhatsapp = (lista: Notificacao[]) => {
+    if (!usuario?.telefone) return;
+    try {
+      const jaEnviadas = obterNotificacoesJaEnviadasWhatsapp();
+      const pendentes = lista.filter((item) => item.id && !item.lida && !jaEnviadas.has(item.id));
+      if (pendentes.length === 0) return;
+
+      pendentes.forEach((item) => {
+        whatsappService.notificarUsuario(usuario.telefone, item);
+      });
+      marcarNotificacoesComoEnviadasWhatsapp(pendentes.map((item) => item.id));
+    } catch (error) {
+      console.error('Erro ao disparar notificações via WhatsApp:', error);
+    }
+  };
+
   const carregarNotificacoes = async () => {
     if (!usuario) return;
     setCarregandoNotificacoes(true);
@@ -58,7 +96,9 @@ export function Layout({ children, paginaAtual, onNavigate }: LayoutProps) {
       const lista = Array.isArray(response)
         ? response
         : (response as any)?.results || (response as any)?.data || [];
-      setNotificacoes(Array.isArray(lista) ? lista : []);
+      const listaFinal = Array.isArray(lista) ? lista : [];
+      setNotificacoes(listaFinal);
+      dispararNotificacoesWhatsapp(listaFinal);
     } catch (error) {
       console.error('Erro ao carregar notificacoes:', error);
       setNotificacoes([]);
@@ -69,6 +109,16 @@ export function Layout({ children, paginaAtual, onNavigate }: LayoutProps) {
 
   useEffect(() => {
     carregarNotificacoes();
+  }, [usuario?.id]);
+
+  // Verificação periódica em segundo plano para que novas notificações do backend
+  // sejam encaminhadas via WhatsApp mesmo sem o utilizador abrir o painel de sinos.
+  useEffect(() => {
+    if (!usuario) return;
+    const intervalo = window.setInterval(() => {
+      carregarNotificacoes();
+    }, 5000);
+    return () => window.clearInterval(intervalo);
   }, [usuario?.id]);
 
   const notificacoesNaoLidas = notificacoes.filter((item) => !item.lida).length;

@@ -25,7 +25,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://suport-api-1.onrender.com',
+        target: 'https://suportapi-production.up.railway.app',
         changeOrigin: true,
         secure: false,
       }

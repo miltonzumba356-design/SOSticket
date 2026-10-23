@@ -27,8 +27,16 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f0f2f5] font-sans selection:bg-blue-500/30">
-      <div className="w-full max-w-[1050px] h-[680px] bg-white rounded-[48px] overflow-hidden flex shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] border border-white/60 mx-4 relative">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-sans selection:bg-blue-500/30 relative overflow-hidden">
+      {/* Decoração de fundo */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 -right-24 w-[28rem] h-[28rem] bg-indigo-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-32 left-1/3 w-80 h-80 bg-cyan-300/20 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:26px_26px]"></div>
+      </div>
+
+      <div className="relative w-full max-w-[1050px] h-[680px] bg-slate-50 rounded-[48px] overflow-hidden flex shadow-[0_40px_100px_-20px_rgba(0,0,0,0.25)] border border-white/60 mx-4">
         
         {/* Lado Esquerdo: Formulário */}
         <div className="w-full lg:w-[60%] p-14 flex flex-col justify-between relative z-30">
@@ -53,7 +61,7 @@ export function Login() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-50 border-2 border-transparent text-slate-900 px-5 py-4 rounded-2xl focus:border-blue-500/30 focus:bg-white transition-all outline-none text-sm placeholder:text-slate-300 font-medium"
+                    className="w-full bg-slate-100 border-2 border-slate-200/70 text-slate-900 px-5 py-4 rounded-2xl focus:border-blue-500/30 focus:bg-white transition-all outline-none text-sm placeholder:text-slate-400 font-medium"
                     placeholder="exemplo@sosticket.pt"
                     required
                   />
@@ -72,7 +80,7 @@ export function Login() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-50 border-2 border-transparent text-slate-900 px-5 py-4 rounded-2xl focus:border-blue-500/30 focus:bg-white transition-all outline-none text-sm placeholder:text-slate-300 font-medium"
+                    className="w-full bg-slate-100 border-2 border-slate-200/70 text-slate-900 px-5 py-4 rounded-2xl focus:border-blue-500/30 focus:bg-white transition-all outline-none text-sm placeholder:text-slate-400 font-medium"
                     placeholder="••••••••••••"
                     required
                   />
@@ -128,7 +136,7 @@ export function Login() {
 
         {/* Lado Direito: Imagem/Visual com Sobreposição Gradual */}
         <div className="hidden lg:block absolute inset-y-0 right-0 w-[70%] z-10">
-          <div className="absolute inset-0 z-20 bg-gradient-to-r from-white via-white/40 to-transparent"></div>
+          <div className="absolute inset-0 z-20 bg-gradient-to-r from-slate-50 via-slate-50/40 to-transparent"></div>
           <img
             src="https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&q=80&w=2070"
             className="w-full h-full object-cover grayscale-[5%] brightness-95"

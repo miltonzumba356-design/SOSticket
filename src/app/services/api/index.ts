@@ -6,6 +6,7 @@ export * from './empresas';
 export * from './tecnicos';
 export * from './contratos';
 export * from './intervencoes';
+export * from './tarefas';
 export * from './notificacoes';
 export * from './configuracoes';
 export * from './relatorios';

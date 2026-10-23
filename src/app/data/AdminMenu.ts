@@ -8,6 +8,7 @@ import {
   Settings,
   User,
   Building2,
+  Calendar,
   LucideIcon
 } from 'lucide-react';
 
@@ -43,6 +44,11 @@ export const adminMenu: MenuItem[] = [
     id: 'intervencoes',
     label: 'Intervenções',
     icon: Ticket,
+  },
+  {
+    id: 'calendario',
+    label: 'Calendário',
+    icon: Calendar,
   },
   {
     id: 'tecnicos',

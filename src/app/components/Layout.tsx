@@ -168,6 +168,7 @@ export function Layout({ children, paginaAtual, onNavigate }: LayoutProps) {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'intervencoes', label: 'Minhas Intervenções', icon: Ticket },
+        { id: 'calendario', label: 'Calendário', icon: Calendar },
         { id: 'contratos', label: 'Meus Contratos', icon: FileText },
         { id: 'perfil', label: 'Meu Perfil', icon: UserCog },
       ] as MenuItem[];

@@ -5,11 +5,13 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
+  Paperclip,
+  Play,
   Trash2,
   UserCog,
   X,
 } from 'lucide-react';
-import { tarefasService, tecnicosService } from '../services/api';
+import { resolverUrlFicheiro, tarefasService, tecnicosService } from '../services/api';
 import { EstadoTarefa, Prioridade, Tarefa, TarefaRequest, Tecnico } from '../types/api';
 
 interface TarefaDetalheModalProps {
@@ -18,6 +20,7 @@ interface TarefaDetalheModalProps {
   onFechar: () => void;
   onAtualizado: () => void;
   podeGerir: boolean;
+  podeExecutar?: boolean;
 }
 
 function normalizarLista<T>(response: any): T[] {
@@ -40,10 +43,54 @@ function comSegundos(valor: string) {
   return valor.length === 16 ? `${valor}:00` : valor;
 }
 
+function normalizarAnexo(item: any) {
+  const url = resolverUrlFicheiro(item?.arquivo || item?.ficheiro || item?.url || item?.file);
+  const nomeDoUrl = url ? decodeURIComponent(url.split('?')[0].split('/').pop() || '') : '';
+  return {
+    id: item?.id,
+    nome: item?.nome || item?.nome_arquivo || item?.nome_ficheiro || nomeDoUrl || 'Documento',
+    url,
+    descricao: item?.descricao,
+  };
+}
+
+const CHAVES_ANEXOS = ['anexos', 'ficheiros', 'arquivos', 'documentos', 'attachments'];
+
+function extrairAnexos(detalhe: any): any[] {
+  const bases = [detalhe, detalhe?.data, detalhe?.tarefa].filter((item) => item && typeof item === 'object');
+
+  for (const base of bases) {
+    for (const chave of CHAVES_ANEXOS) {
+      if (Array.isArray(base[chave])) return base[chave];
+    }
+  }
+
+  // Último recurso: qualquer lista de objetos com ligação para um ficheiro.
+  for (const base of bases) {
+    for (const valor of Object.values(base)) {
+      if (
+        Array.isArray(valor) &&
+        valor.length > 0 &&
+        valor.every((item: any) => item && typeof item === 'object' && (item.arquivo || item.ficheiro || item.url || item.file))
+      ) {
+        return valor;
+      }
+    }
+  }
+
+  return [];
+}
+
+async function buscarAnexos(tarefaId: string) {
+  const detalhe: any = await tarefasService.obterPorId(tarefaId);
+  return extrairAnexos(detalhe).map(normalizarAnexo);
+}
+
 const ESTADOS: Array<{ value: EstadoTarefa; label: string }> = [
   { value: 'pendente', label: 'Pendente' },
   { value: 'em_progresso', label: 'Em progresso' },
   { value: 'concluida', label: 'Concluída' },
+  { value: 'verificado', label: 'Verificado' },
   { value: 'cancelada', label: 'Cancelada' },
   { value: 'expirado', label: 'Expirado' },
 ];
@@ -55,7 +102,14 @@ const PRIORIDADES: Array<{ value: Prioridade; label: string }> = [
   { value: 'urgente', label: 'Urgente' },
 ];
 
-export function TarefaDetalheModal({ aberto, tarefa, onFechar, onAtualizado, podeGerir }: TarefaDetalheModalProps) {
+export function TarefaDetalheModal({ aberto, tarefa, onFechar, onAtualizado, podeGerir, podeExecutar = false }: TarefaDetalheModalProps) {
+  const [executando, setExecutando] = useState(false);
+  const [ficheiros, setFicheiros] = useState<File[]>([]);
+  const [descricaoAnexo, setDescricaoAnexo] = useState('');
+  const [anexando, setAnexando] = useState(false);
+  const [inputAnexoKey, setInputAnexoKey] = useState(0);
+  const [anexosTarefa, setAnexosTarefa] = useState<Array<{ id?: string; nome: string; url?: string; descricao?: string }>>([]);
+  const [carregandoAnexos, setCarregandoAnexos] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false);
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -83,6 +137,16 @@ export function TarefaDetalheModal({ aberto, tarefa, onFechar, onAtualizado, pod
     setErro('');
     setSalvando(false);
     setApagando(false);
+    setFicheiros([]);
+    setDescricaoAnexo('');
+    setInputAnexoKey((key) => key + 1);
+    setAnexosTarefa([]);
+
+    setCarregandoAnexos(true);
+    buscarAnexos(tarefa.id)
+      .then(setAnexosTarefa)
+      .catch((error) => console.error('Erro ao carregar anexos da tarefa:', error))
+      .finally(() => setCarregandoAnexos(false));
 
     if (podeGerir) {
       tecnicosService
@@ -129,6 +193,69 @@ export function TarefaDetalheModal({ aberto, tarefa, onFechar, onAtualizado, pod
       setErro(error?.message || 'Falha ao atualizar a tarefa.');
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const handleVerificar = async () => {
+    setErro('');
+    setExecutando(true);
+
+    try {
+      await tarefasService.atualizacaoParcial(tarefa.id, { estado: 'verificado' });
+      onAtualizado();
+    } catch (error: any) {
+      console.error('Erro ao verificar tarefa:', error);
+      setErro(error?.message || 'Falha ao marcar a tarefa como verificada.');
+    } finally {
+      setExecutando(false);
+    }
+  };
+
+  const handleExecutar = async (acao: 'iniciar' | 'concluir') => {
+    setErro('');
+    setExecutando(true);
+
+    try {
+      if (acao === 'iniciar') {
+        await tarefasService.iniciar(tarefa.id);
+      } else {
+        await tarefasService.concluir(tarefa.id);
+      }
+      onAtualizado();
+    } catch (error: any) {
+      console.error(`Erro ao ${acao} tarefa:`, error);
+      setErro(error?.message || `Falha ao ${acao} a tarefa.`);
+    } finally {
+      setExecutando(false);
+    }
+  };
+
+  const handleAnexar = async () => {
+    if (!ficheiros.length) return;
+    setErro('');
+    setAnexando(true);
+
+    try {
+      const totalAntes = anexosTarefa.length;
+      await tarefasService.carregarAnexo(tarefa.id, {
+        arquivo: ficheiros,
+        descricao: descricaoAnexo.trim() || undefined,
+      });
+
+      // Volta a pedir a tarefa ao servidor: o que aparece é o que o administrador também vê.
+      const doServidor = await buscarAnexos(tarefa.id);
+      setAnexosTarefa(doServidor);
+      if (doServidor.length <= totalAntes) {
+        setErro('O servidor aceitou o envio, mas o documento não aparece nos anexos da tarefa. O administrador pode não o ver.');
+      }
+      setFicheiros([]);
+      setDescricaoAnexo('');
+      setInputAnexoKey((key) => key + 1);
+    } catch (error: any) {
+      console.error('Erro ao anexar documento à tarefa:', error);
+      setErro(error?.message || 'Falha ao anexar o documento.');
+    } finally {
+      setAnexando(false);
     }
   };
 
@@ -343,8 +470,112 @@ export function TarefaDetalheModal({ aberto, tarefa, onFechar, onAtualizado, pod
               </div>
             )}
 
-            {podeGerir && (
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
+              <p className="text-[10px] uppercase tracking-widest font-bold text-gray-600 flex items-center gap-1">
+                <Paperclip className="w-3 h-3" /> Anexos ({anexosTarefa.length})
+              </p>
+              {carregandoAnexos ? (
+                <p className="text-xs text-gray-500 flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> A carregar...</p>
+              ) : anexosTarefa.length === 0 ? (
+                <p className="text-xs text-gray-500">Sem documentos anexados.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {anexosTarefa.map((anexo, index) => (
+                    <li key={anexo.id || index}>
+                      {anexo.url ? (
+                        <a
+                          href={anexo.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2 text-xs font-bold text-indigo-700 hover:text-indigo-900 underline underline-offset-2"
+                        >
+                          <Paperclip className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{anexo.nome}</span>
+                        </a>
+                      ) : (
+                        <span className="flex items-center gap-2 text-xs font-bold text-gray-700">
+                          <Paperclip className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{anexo.nome}</span>
+                        </span>
+                      )}
+                      {anexo.descricao && <p className="text-[11px] text-gray-500 ml-5">{anexo.descricao}</p>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {podeExecutar && (
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
+                <p className="text-[10px] uppercase tracking-widest font-bold text-gray-600 flex items-center gap-1">
+                  <Paperclip className="w-3 h-3" /> Anexar documento
+                </p>
+                <input
+                  key={inputAnexoKey}
+                  type="file"
+                  multiple
+                  onChange={(e) => setFicheiros(Array.from(e.target.files || []))}
+                  className="block w-full text-xs text-gray-700 file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                />
+                <input
+                  type="text"
+                  value={descricaoAnexo}
+                  onChange={(e) => setDescricaoAnexo(e.target.value)}
+                  maxLength={255}
+                  placeholder="Descrição (opcional)"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={handleAnexar}
+                  disabled={anexando || ficheiros.length === 0}
+                  className="w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {anexando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                  Anexar{ficheiros.length > 1 ? ` ${ficheiros.length} ficheiros` : ''}
+                </button>
+              </div>
+            )}
+
+            {podeExecutar && tarefa.estado === 'expirado' && (
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-orange-900 text-xs font-bold">
+                O prazo desta tarefa já passou, por isso não pode ser iniciada. Peça ao administrador para alargar a data de fim.
+              </div>
+            )}
+
+            {podeExecutar && (tarefa.estado === 'pendente' || tarefa.estado === 'em_progresso') && (
               <div className="pt-2">
+                {tarefa.estado === 'pendente' ? (
+                  <button
+                    onClick={() => handleExecutar('iniciar')}
+                    disabled={executando}
+                    className="w-full py-3 rounded-2xl text-sm font-black uppercase tracking-widest bg-amber-500 text-white shadow-lg shadow-amber-100 hover:bg-amber-600 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {executando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                    Iniciar tarefa
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleExecutar('concluir')}
+                    disabled={executando}
+                    className="w-full py-3 rounded-2xl text-sm font-black uppercase tracking-widest bg-emerald-500 text-white shadow-lg shadow-emerald-100 hover:bg-emerald-600 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {executando ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    Fechar tarefa
+                  </button>
+                )}
+              </div>
+            )}
+
+            {podeGerir && tarefa.estado === 'concluida' && (
+              <div className="pt-2">
+                <button
+                  onClick={handleVerificar}
+                  disabled={executando}
+                  className="w-full py-3 rounded-2xl text-sm font-black uppercase tracking-widest bg-teal-600 text-white shadow-lg shadow-teal-100 hover:bg-teal-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {executando ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  Marcar como verificada
+                </button>
               </div>
             )}
           </div>

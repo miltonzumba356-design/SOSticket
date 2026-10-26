@@ -8,6 +8,8 @@ import {
   AlertCircle,
   Ticket,
   CheckSquare,
+  CheckCircle2,
+  Play,
   CalendarDays,
   Plus,
   Eye,
@@ -68,17 +70,19 @@ function statusStyle(status?: string) {
   switch (status) {
     case 'concluido':
     case 'concluida':
-      return 'bg-emerald-100 text-emerald-700';
+      return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
     case 'em_andamento':
     case 'em_progresso':
-      return 'bg-amber-100 text-amber-700';
+      return 'bg-amber-100 text-amber-900 border border-amber-300';
     case 'cancelada':
     case 'cancelado':
-      return 'bg-red-100 text-red-700';
+      return 'bg-red-100 text-red-800 border border-red-300';
+    case 'verificado':
+      return 'bg-teal-100 text-teal-900 border border-teal-300';
     case 'expirado':
-      return 'bg-orange-100 text-orange-700';
+      return 'bg-orange-100 text-orange-900 border border-orange-300';
     default:
-      return 'bg-blue-100 text-blue-700';
+      return 'bg-blue-100 text-blue-800 border border-blue-300';
   }
 }
 
@@ -97,6 +101,7 @@ export function Calendario() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [tarefaSelecionada, setTarefaSelecionada] = useState<Tarefa | null>(null);
   const [menuTarefa, setMenuTarefa] = useState<Tarefa | null>(null);
+  const [tarefaEmExecucao, setTarefaEmExecucao] = useState<string | null>(null);
 
   const carregarDados = async () => {
     setCarregando(true);
@@ -275,6 +280,29 @@ export function Calendario() {
     } as Tarefa);
   };
 
+  // O técnico só vê as tarefas que lhe foram atribuídas; um admin também pode executar as suas.
+  const podeExecutar = (tarefa?: Tarefa | null) =>
+    !!tarefa && (isTecnico || (!!usuario?.id && String(tarefa.atribuido_a?.id) === String(usuario.id)));
+
+  const executarTarefa = async (id: string, acao: 'iniciar' | 'concluir') => {
+    setErro('');
+    setTarefaEmExecucao(id);
+    try {
+      if (acao === 'iniciar') {
+        await tarefasService.iniciar(id);
+      } else {
+        await tarefasService.concluir(id);
+      }
+      await carregarDados();
+    } catch (error: any) {
+      console.error(`Erro ao ${acao} tarefa:`, error);
+      setErro(error?.message || `Não foi possível ${acao} a tarefa.`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setTarefaEmExecucao(null);
+    }
+  };
+
   const dataSelecionadaLabel = useMemo(() => {
     const [ano, mes, dia] = diaSelecionado.split('-').map(Number);
     const data = new Date(ano, mes - 1, dia);
@@ -286,7 +314,7 @@ export function Calendario() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Calendário de Trabalho</h2>
-          <p className="text-sm text-gray-500">Intervenções e tarefas agendadas.</p>
+          <p className="text-sm text-gray-700">Intervenções e tarefas agendadas.</p>
         </div>
         <div className="flex items-center gap-3">
           {isAdmin && (
@@ -298,10 +326,10 @@ export function Calendario() {
               <span>Nova tarefa</span>
             </button>
           )}
-          <div className="flex items-center gap-4 bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-4 bg-white p-2 rounded-xl border border-gray-300 shadow-sm">
           <button
             onClick={() => mudarMes(-1)}
-            className="p-2 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-gray-600 transition-all"
+            className="p-2 hover:bg-gray-100 rounded-lg text-gray-700 hover:text-gray-900 transition-all"
             aria-label="Mês anterior"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -311,7 +339,7 @@ export function Calendario() {
           </span>
           <button
             onClick={() => mudarMes(1)}
-            className="p-2 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-gray-600 transition-all"
+            className="p-2 hover:bg-gray-100 rounded-lg text-gray-700 hover:text-gray-900 transition-all"
             aria-label="Mês seguinte"
           >
             <ChevronRight className="w-5 h-5" />
@@ -327,22 +355,22 @@ export function Calendario() {
         </div>
       )}
 
-      <div className="relative bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden">
+      <div className="relative bg-white rounded-3xl border border-gray-300 shadow-xl overflow-hidden">
         {carregando && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
           </div>
         )}
-        <div className="grid grid-cols-7 bg-gray-50/50 border-b border-gray-100">
+        <div className="grid grid-cols-7 bg-gray-100 border-b border-gray-300">
           {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((dia) => (
-            <div key={dia} className="px-2 py-4 text-xs font-bold text-gray-400 text-center uppercase tracking-widest">
+            <div key={dia} className="px-2 py-4 text-xs font-black text-gray-700 text-center uppercase tracking-widest">
               {dia}
             </div>
           ))}
         </div>
         <div className="grid grid-cols-7">
           {espacosVazios.map((i) => (
-            <div key={`empty-${i}`} className="min-h-[140px] p-2 border-b border-r border-gray-50 bg-gray-50/20"></div>
+            <div key={`empty-${i}`} className="min-h-[140px] p-2 border-b border-r border-gray-200 bg-gray-100/70"></div>
           ))}
           {dias.map((dia) => {
             const dataCelula = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), dia);
@@ -355,8 +383,8 @@ export function Calendario() {
               <div
                 key={dia}
                 onClick={() => selecionarDia(chave, dataAtual.getFullYear(), dataAtual.getMonth(), dia)}
-                className={`min-h-[140px] p-2 border-b border-r border-gray-50 transition-all cursor-pointer ${
-                  isSelecionado ? 'bg-indigo-50/70' : 'hover:bg-gray-50/50'
+                className={`min-h-[140px] p-2 border-b border-r border-gray-200 transition-all cursor-pointer ${
+                  isSelecionado ? 'bg-indigo-100 ring-2 ring-inset ring-indigo-500' : 'hover:bg-gray-100'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
@@ -364,13 +392,13 @@ export function Calendario() {
                     className={`text-sm font-bold ${
                       isHoje
                         ? 'w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center'
-                        : 'text-gray-400'
+                        : 'text-gray-800'
                     }`}
                   >
                     {dia}
                   </span>
                   {eventosDia.length > 0 && (
-                    <span className="text-[10px] font-black text-indigo-500">{eventosDia.length}</span>
+                    <span className="text-[11px] font-black text-white bg-indigo-600 rounded-full min-w-5 h-5 px-1 flex items-center justify-center">{eventosDia.length}</span>
                   )}
                 </div>
                 <div className="space-y-1">
@@ -379,13 +407,13 @@ export function Calendario() {
                       key={`${evento.tipo}-${evento.id}`}
                       className={`p-1.5 rounded-lg border ${
                         evento.tipo === 'tarefa'
-                          ? 'bg-amber-50 border-amber-100'
-                          : 'bg-indigo-50 border-indigo-100'
+                          ? 'bg-amber-100 border-amber-400'
+                          : 'bg-indigo-100 border-indigo-400'
                       }`}
                     >
                       <p
-                        className={`text-[10px] font-bold truncate ${
-                          evento.tipo === 'tarefa' ? 'text-amber-700' : 'text-indigo-700'
+                        className={`text-[11px] font-bold truncate ${
+                          evento.tipo === 'tarefa' ? 'text-amber-950' : 'text-indigo-950'
                         }`}
                       >
                         {evento.titulo}
@@ -394,12 +422,12 @@ export function Calendario() {
                         <div className="flex items-center gap-1 mt-0.5">
                           <Clock
                             className={`w-2 h-2 ${
-                              evento.tipo === 'tarefa' ? 'text-amber-400' : 'text-indigo-400'
+                              evento.tipo === 'tarefa' ? 'text-amber-700' : 'text-indigo-700'
                             }`}
                           />
                           <span
-                            className={`text-[8px] font-bold ${
-                              evento.tipo === 'tarefa' ? 'text-amber-500' : 'text-indigo-400'
+                            className={`text-[10px] font-bold ${
+                              evento.tipo === 'tarefa' ? 'text-amber-800' : 'text-indigo-800'
                             }`}
                           >
                             {evento.horaInicio}
@@ -409,7 +437,7 @@ export function Calendario() {
                     </div>
                   ))}
                   {eventosDia.length > 2 && (
-                    <p className="text-[9px] font-bold text-gray-400 pl-1">+{eventosDia.length - 2} mais</p>
+                    <p className="text-[10px] font-bold text-gray-600 pl-1">+{eventosDia.length - 2} mais</p>
                   )}
                 </div>
               </div>
@@ -419,19 +447,19 @@ export function Calendario() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-300 shadow-sm">
           <div className="mb-6">
             <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 capitalize">
               <CalendarDays className="w-5 h-5 text-indigo-500" />
               {dataSelecionadaLabel}
             </h3>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-600 mt-1">
               {eventosSelecionados.length} evento{eventosSelecionados.length === 1 ? '' : 's'}
             </p>
           </div>
           <div className="space-y-4">
             {eventosSelecionados.length === 0 ? (
-              <div className="text-center py-12 text-sm text-gray-400">
+              <div className="text-center py-12 text-sm text-gray-600">
                 Sem eventos neste dia.
               </div>
             ) : (
@@ -441,10 +469,10 @@ export function Calendario() {
                 return (
                   <div
                     key={`${evento.tipo}-${evento.id}`}
-                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-all border border-transparent hover:border-gray-200"
+                    className="flex items-center gap-4 p-4 bg-white rounded-2xl hover:bg-gray-50 transition-all border border-gray-300 hover:border-gray-400 shadow-sm"
                   >
-                    <div className="w-12 h-12 bg-white rounded-xl flex flex-col items-center justify-center shadow-sm border border-gray-100">
-                      <span className="text-[9px] font-bold text-gray-400 uppercase">
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex flex-col items-center justify-center shadow-sm border border-gray-300">
+                      <span className="text-[9px] font-black text-gray-600 uppercase">
                         {data ? MESES[data.getMonth()].slice(0, 3) : '--'}
                       </span>
                       <span className="text-lg font-black text-gray-900 leading-none">
@@ -454,23 +482,23 @@ export function Calendario() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         {evento.tipo === 'tarefa' ? (
-                          <CheckSquare className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <CheckSquare className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                         ) : (
-                          <Ticket className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                          <Ticket className="w-3.5 h-3.5 text-indigo-700 shrink-0" />
                         )}
                         <h4 className="font-bold text-gray-900 text-sm truncate">{evento.titulo}</h4>
                       </div>
                       <div className="flex flex-wrap items-center gap-3 mt-1">
                         {evento.numero && (
-                          <span className="text-[10px] font-bold text-gray-400 uppercase">{evento.numero}</span>
+                          <span className="text-[10px] font-bold text-gray-600 uppercase">{evento.numero}</span>
                         )}
                         {evento.local && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-gray-500 uppercase">
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-gray-700 uppercase">
                             <MapPin className="w-3 h-3" /> {evento.local}
                           </span>
                         )}
                         {evento.horaInicio && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 uppercase">
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-800 uppercase">
                             <Clock className="w-3 h-3" />
                             {evento.horaInicio}
                             {evento.horaFim ? ` - ${evento.horaFim}` : ''}
@@ -482,6 +510,36 @@ export function Calendario() {
                       <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase ${statusStyle(evento.status)}`}>
                         {evento.status.replace('_', ' ')}
                       </span>
+                    )}
+                    {evento.tipo === 'tarefa' && !isCliente && podeExecutar(tarefaEvento) && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => abrirTarefa(evento)}
+                          className="px-3 py-1.5 text-[11px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                        >
+                          Detalhes
+                        </button>
+                        {evento.status === 'pendente' && (
+                          <button
+                            onClick={() => executarTarefa(evento.id, 'iniciar')}
+                            disabled={tarefaEmExecucao === evento.id}
+                            className="px-3 py-1.5 text-[11px] font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors disabled:opacity-60 flex items-center gap-1"
+                          >
+                            {tarefaEmExecucao === evento.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                            Iniciar
+                          </button>
+                        )}
+                        {evento.status === 'em_progresso' && (
+                          <button
+                            onClick={() => executarTarefa(evento.id, 'concluir')}
+                            disabled={tarefaEmExecucao === evento.id}
+                            className="px-3 py-1.5 text-[11px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-colors disabled:opacity-60 flex items-center gap-1"
+                          >
+                            {tarefaEmExecucao === evento.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                            Fechar
+                          </button>
+                        )}
+                      </div>
                     )}
                     {evento.tipo === 'tarefa' && usuario?.perfil === 'admin' && (
                       <TarefaMenuDropdown
@@ -499,22 +557,22 @@ export function Calendario() {
           </div>
         </div>
 
-        <div className="bg-indigo-600 p-8 rounded-3xl text-white shadow-xl shadow-indigo-200 relative overflow-hidden">
+        <div className="bg-indigo-700 p-8 rounded-3xl text-white shadow-xl shadow-indigo-200 relative overflow-hidden">
           <div className="relative z-10">
             <h3 className="text-xl font-bold mb-2">Resumo</h3>
-            <p className="text-indigo-100 text-sm mb-6">
+            <p className="text-white text-sm mb-6">
               Tens {eventosProximos7Dias} evento{eventosProximos7Dias === 1 ? '' : 's'} nos próximos 7 dias.
             </p>
             <div className="space-y-4">
-              <div className="flex justify-between items-end border-b border-indigo-500 pb-2">
+              <div className="flex justify-between items-end border-b border-indigo-300 pb-2">
                 <span className="text-sm">Intervenções no mês</span>
                 <span className="text-2xl font-black">{intervencoesDoMes}</span>
               </div>
-              <div className="flex justify-between items-end border-b border-indigo-500 pb-2">
+              <div className="flex justify-between items-end border-b border-indigo-300 pb-2">
                 <span className="text-sm">Tarefas pendentes</span>
                 <span className="text-2xl font-black">{tarefasPendentes}</span>
               </div>
-              <div className="flex justify-between items-end border-b border-indigo-500 pb-2">
+              <div className="flex justify-between items-end border-b border-indigo-300 pb-2">
                 <span className="text-sm">Eventos hoje</span>
                 <span className="text-2xl font-black">{eventosPorDia.get(hojeKey)?.length || 0}</span>
               </div>
@@ -539,6 +597,7 @@ export function Calendario() {
           setTarefaSelecionada(null);
         }}
         podeGerir={usuario?.perfil === 'admin'}
+        podeExecutar={podeExecutar(tarefaSelecionada)}
       />
 
       {menuTarefa && (

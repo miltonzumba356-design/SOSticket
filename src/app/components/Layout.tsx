@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCronometro } from '../contexts/CronometroContext';
 import { adminMenu, MenuItem } from '../data/AdminMenu';
@@ -133,6 +133,26 @@ export function Layout({ children, paginaAtual, onNavigate }: LayoutProps) {
     setAvisoNotificacoes(false);
   }, [notificacoesNaoLidas, painelNotificacoes]);
 
+  const notificacoesRef = useRef<HTMLDivElement>(null);
+
+  // Fecha o painel ao tocar/clicar em qualquer sítio fora das notificações.
+  useEffect(() => {
+    if (!painelNotificacoes) return;
+
+    const fecharAoTocarFora = (event: MouseEvent | TouchEvent) => {
+      if (notificacoesRef.current && !notificacoesRef.current.contains(event.target as Node)) {
+        setPainelNotificacoes(false);
+      }
+    };
+
+    document.addEventListener('mousedown', fecharAoTocarFora);
+    document.addEventListener('touchstart', fecharAoTocarFora);
+    return () => {
+      document.removeEventListener('mousedown', fecharAoTocarFora);
+      document.removeEventListener('touchstart', fecharAoTocarFora);
+    };
+  }, [painelNotificacoes]);
+
   const marcarNotificacaoLida = async (id: string) => {
     try {
       await notificacoesService.marcarLida(id);
@@ -198,7 +218,7 @@ export function Layout({ children, paginaAtual, onNavigate }: LayoutProps) {
             <h1 className="text-xl font-bold text-theme-primary">SOSTicket</h1>
           </div>
           <div className="flex items-center gap-4">
-            <div className="relative">
+            <div className="relative" ref={notificacoesRef}>
             <div className="flex items-center gap-2">
               {avisoNotificacoes && (
                 <button

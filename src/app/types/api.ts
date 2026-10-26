@@ -174,7 +174,7 @@ export interface Intervencao {
   comentarios?: any[];
 }
 
-export type EstadoTarefa = 'pendente' | 'em_progresso' | 'concluida' | 'cancelada' | 'expirado';
+export type EstadoTarefa = 'pendente' | 'em_progresso' | 'concluida' | 'verificado' | 'cancelada' | 'expirado';
 
 export interface PrazoTarefa {
   total_horas: number;

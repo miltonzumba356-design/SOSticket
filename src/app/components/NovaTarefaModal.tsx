@@ -22,9 +22,10 @@ function toLocalInput(data: Date) {
 }
 
 function valoresIniciais() {
+  // Início na próxima hora certa e fim uma hora depois, para tarefas criadas no mesmo dia não ficarem com datas iguais.
   const agora = new Date();
-  const inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 9, 0, 0);
-  const fim = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 18, 0, 0);
+  const inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), agora.getHours() + 1, 0, 0);
+  const fim = new Date(inicio.getTime() + 60 * 60 * 1000);
   return { inicio: toLocalInput(inicio), fim: toLocalInput(fim) };
 }
 
@@ -87,16 +88,33 @@ export function NovaTarefaModal({ aberto, onFechar, onCriado }: NovaTarefaModalP
         data_inicio: comSegundos(dataInicio),
         data_fim: comSegundos(dataFim),
         prioridade,
-        ...(atribuidoA ? { atribuido_a_id: atribuidoA } : {}),
       };
 
       const tarefa = await tarefasService.criar(payload);
+
+      // A atribuição é feita à parte (endpoint próprio), para que um problema aqui não impeça a criação.
+      if (atribuidoA && tarefa?.id) {
+        try {
+          await tarefasService.atribuir(tarefa.id, atribuidoA);
+        } catch (errAtribuir: any) {
+          console.error('Erro ao atribuir tarefa:', errAtribuir);
+          onCriado(tarefa);
+          setErro(`A tarefa foi criada, mas não foi possível atribuí-la: ${errAtribuir?.message || 'erro desconhecido'}`);
+          return;
+        }
+      }
+
       setSucesso(true);
       onCriado(tarefa);
       setTimeout(() => onFechar(), 600);
     } catch (error: any) {
       console.error('Erro ao criar tarefa:', error);
-      setErro(error?.message || 'Falha ao criar a tarefa.');
+      const mensagem = error?.message || 'Falha ao criar a tarefa.';
+      setErro(
+        /integridade/i.test(mensagem)
+          ? `${mensagem} Se já existe outra tarefa com o mesmo início e fim, altere a hora; se o erro continuar, o servidor está a limitar as tarefas por dia.`
+          : mensagem
+      );
     } finally {
       setSalvando(false);
     }

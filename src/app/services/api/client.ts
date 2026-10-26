@@ -14,6 +14,17 @@ function normalizeApiBaseUrl(value: string) {
 
 const API_BASE_URL = normalizeApiBaseUrl(rawApiBaseUrl);
 
+// Ficheiros (media) são servidos pelo backend e não passam pelo proxy `/api`.
+const API_ORIGIN = /^https?:\/\//.test(rawApiBaseUrl)
+  ? new URL(rawApiBaseUrl).origin
+  : 'https://suportapi-production.up.railway.app';
+
+export function resolverUrlFicheiro(url?: string | null) {
+  if (!url) return undefined;
+  if (/^(https?:|blob:|data:)/.test(url)) return url;
+  return `${API_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
 export type QueryValue = string | number | boolean | null | undefined;
 export type QueryParams = Record<string, QueryValue>;
 

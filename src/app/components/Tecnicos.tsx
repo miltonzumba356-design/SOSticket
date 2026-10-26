@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Tecnico } from '../types/api';
 import { tecnicosService } from '../services/api';
 import { formatarHoras } from '../utils/formatters';
+import { imprimirRelatorioSemanal, paraInputData } from '../utils/relatorioSemanal';
 import { 
   Plus, 
   Search, 
@@ -12,6 +13,9 @@ import {
   CheckCircle, 
   Clock, 
   MoreVertical,
+  Printer,
+  Edit2,
+  Trash2,
   Filter,
   BarChart3,
   ChevronRight,
@@ -32,6 +36,10 @@ export function Tecnicos() {
   const [exibirPerformance, setExibirPerformance] = useState(false);
   const [tecnicoPerformance, setTecnicoPerformance] = useState<Tecnico | null>(null);
   const [carregandoPerformance, setCarregandoPerformance] = useState(false);
+  const [semanaRelatorio, setSemanaRelatorio] = useState('');
+  const [imprimindoRelatorio, setImprimindoRelatorio] = useState(false);
+  const [menuTecnicoAberto, setMenuTecnicoAberto] = useState<string | null>(null);
+  const [tecnicoEmEdicao, setTecnicoEmEdicao] = useState<Tecnico | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   
   // Estado do formulário de novo técnico
@@ -77,6 +85,63 @@ export function Tecnicos() {
     return () => clearTimeout(timer);
   }, [busca]);
 
+  useEffect(() => {
+    if (!menuTecnicoAberto) return;
+    const fecharMenu = () => setMenuTecnicoAberto(null);
+    document.addEventListener('click', fecharMenu);
+    return () => document.removeEventListener('click', fecharMenu);
+  }, [menuTecnicoAberto]);
+
+  const formVazio = {
+    nome: '',
+    email: '',
+    password: '',
+    telefone: '',
+    especialidades: '',
+    data_contratacao: '',
+    empresa: '',
+    endereco: '',
+    status: 'activo' as 'activo' | 'inactivo'
+  };
+
+  const fecharModal = () => {
+    setExibirModal(false);
+    setTecnicoEmEdicao(null);
+    setFormData(formVazio);
+  };
+
+  const abrirNovoTecnico = () => {
+    setTecnicoEmEdicao(null);
+    setFormData(formVazio);
+    setExibirModal(true);
+  };
+
+  const abrirEdicaoTecnico = (tecnico: Tecnico) => {
+    setTecnicoEmEdicao(tecnico);
+    setFormData({
+      ...formVazio,
+      nome: tecnico.nome || '',
+      email: tecnico.email || '',
+      telefone: (tecnico as any).telefone || '',
+      especialidades: Array.isArray(tecnico.especialidades) ? tecnico.especialidades.join(', ') : '',
+      data_contratacao: tecnico.data_contratacao ? String(tecnico.data_contratacao).slice(0, 10) : '',
+      status: tecnico.status === 'inactivo' ? 'inactivo' : 'activo'
+    });
+    setExibirModal(true);
+  };
+
+  const removerTecnico = async (tecnico: Tecnico) => {
+    if (!window.confirm(`Deseja eliminar o técnico ${tecnico.nome}?`)) return;
+    setErro('');
+    try {
+      await tecnicosService.deletar(tecnico.id);
+      await carregarTecnicos();
+    } catch (err: any) {
+      console.error('Erro ao eliminar técnico:', err);
+      setErro(err?.message || 'Falha ao eliminar técnico.');
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -89,10 +154,9 @@ export function Tecnicos() {
     setErro('');
 
     try {
-      await tecnicosService.criar({
+      const dados = {
         nome: formData.nome,
         email: formData.email,
-        password: formData.password,
         telefone: formData.telefone,
         especialidades: formData.especialidades
           .split(',')
@@ -100,32 +164,45 @@ export function Tecnicos() {
           .filter(Boolean),
         data_contratacao: formData.data_contratacao || null,
         status: formData.status
-      });
-      
+      };
+
+      if (tecnicoEmEdicao) {
+        await tecnicosService.atualizacaoParcial(tecnicoEmEdicao.id, {
+          ...dados,
+          ...(formData.password ? { password: formData.password } : {})
+        } as Partial<Tecnico>);
+      } else {
+        await tecnicosService.criar({ ...dados, password: formData.password });
+      }
+
       setStatus('success');
       setTimeout(() => {
-        setExibirModal(false);
-        setFormData({
-          nome: '',
-          email: '',
-          password: '',
-          telefone: '',
-          especialidades: '',
-          data_contratacao: '',
-          empresa: '',
-          endereco: '',
-          status: 'activo'
-        });
+        fecharModal();
         setStatus('idle');
         carregarTecnicos();
       }, 1500);
     } catch (err: any) {
-      console.error('Erro ao criar técnico:', err);
-      setErro(err.message || 'Falha ao criar novo técnico.');
+      console.error('Erro ao guardar técnico:', err);
+      setErro(err.message || (tecnicoEmEdicao ? 'Falha ao atualizar técnico.' : 'Falha ao criar novo técnico.'));
       setStatus('error');
       setTimeout(() => setStatus('idle'), 3000);
     } finally {
       setCarregando(false);
+    }
+  };
+
+  const imprimirRelatorio = async () => {
+    if (!tecnicoPerformance || !semanaRelatorio) return;
+    const [ano, mes, dia] = semanaRelatorio.split('-').map(Number);
+    setImprimindoRelatorio(true);
+    setErro('');
+    try {
+      await imprimirRelatorioSemanal(tecnicoPerformance, new Date(ano, mes - 1, dia));
+    } catch (err: any) {
+      console.error('Erro ao gerar relatório semanal:', err);
+      setErro(err?.message || 'Falha ao gerar o relatório semanal.');
+    } finally {
+      setImprimindoRelatorio(false);
     }
   };
 
@@ -135,6 +212,7 @@ export function Tecnicos() {
     try {
       const detalhe = await tecnicosService.obterPorId(tecnico.id);
       setTecnicoPerformance(detalhe);
+      setSemanaRelatorio(paraInputData(new Date()));
       setExibirPerformance(true);
     } catch (err: any) {
       console.error('Erro ao carregar performance do técnico:', err);
@@ -152,13 +230,20 @@ export function Tecnicos() {
           <p className="text-sm text-gray-500">Gestão de performance, especialidades e atribuições.</p>
         </div>
         <button 
-          onClick={() => setExibirModal(true)}
+          onClick={abrirNovoTecnico}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
         >
           <Plus className="w-5 h-5" />
           <span>Adicionar Técnico</span>
         </button>
       </div>
+
+      {erro && (
+        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-xl text-red-700">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <span className="font-medium text-sm">{erro}</span>
+        </div>
+      )}
 
       {/* Toolbar e Lista ... mantido igual ... */}
       {/* (Omitido para brevidade no replacement, mas incluirei o resto do arquivo abaixo) */}
@@ -199,7 +284,39 @@ export function Tecnicos() {
                     <CheckCircle className="w-3 h-3 text-white" />
                   </div>
                 </div>
-                <button onClick={() => abrirPerformance(tecnico)} className="p-1.5 hover:bg-gray-100 rounded-lg"><MoreVertical className="w-5 h-5 text-gray-400" /></button>
+                <div className="relative">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuTecnicoAberto((atual) => atual === tecnico.id ? null : tecnico.id);
+                    }}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg"
+                  >
+                    <MoreVertical className="w-5 h-5 text-gray-400" />
+                  </button>
+                  {menuTecnicoAberto === tecnico.id && (
+                    <div className="absolute right-0 top-9 w-44 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden text-left">
+                      <button
+                        onClick={() => {
+                          setMenuTecnicoAberto(null);
+                          abrirEdicaoTecnico(tecnico);
+                        }}
+                        className="w-full px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <Edit2 className="w-4 h-4" /> Editar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMenuTecnicoAberto(null);
+                          removerTecnico(tecnico);
+                        }}
+                        className="w-full px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" /> Eliminar
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="mb-6">
@@ -237,16 +354,21 @@ export function Tecnicos() {
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-gray-50/50 flex items-center justify-between border-t border-gray-100 group-hover:bg-indigo-600 transition-colors">
+            <div
+              onClick={() => {
+                if (!carregandoPerformance) abrirPerformance(tecnico);
+              }}
+              className="px-6 py-4 bg-gray-50/50 flex items-center justify-between border-t border-gray-100 group-hover:bg-indigo-600 transition-colors cursor-pointer"
+            >
               <button
-                onClick={() => abrirPerformance(tecnico)}
+                type="button"
                 disabled={carregandoPerformance}
                 className="flex items-center gap-2 text-xs font-bold text-indigo-600 group-hover:text-white transition-colors disabled:opacity-60"
               >
                 {carregandoPerformance ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
                 VER PERFORMANCE
               </button>
-              <button className="text-gray-400 group-hover:text-white/80">
+              <button type="button" className="text-gray-400 group-hover:text-white/80">
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>
@@ -259,8 +381,8 @@ export function Tecnicos() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900">Novo Técnico</h3>
-              <button onClick={() => setExibirModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
+              <h3 className="text-xl font-bold text-gray-900">{tecnicoEmEdicao ? 'Editar Técnico' : 'Novo Técnico'}</h3>
+              <button onClick={fecharModal} className="p-2 hover:bg-gray-100 rounded-full">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
@@ -291,11 +413,11 @@ export function Tecnicos() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-bold text-gray-700">Password *</label>
-                  <input 
-                    type="password" 
+                  <label className="text-sm font-bold text-gray-700">{tecnicoEmEdicao ? 'Nova Password (opcional)' : 'Password *'}</label>
+                  <input
+                    type="password"
                     name="password"
-                    required
+                    required={!tecnicoEmEdicao}
                     value={formData.password}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" 
@@ -372,7 +494,7 @@ export function Tecnicos() {
                 </div>
               </div>
               <div className="p-6 border-t border-gray-100 flex justify-end gap-4 bg-gray-50/50 rounded-b-2xl">
-                <button type="button" onClick={() => setExibirModal(false)} className="px-6 py-2.5 text-sm font-bold text-gray-500 hover:text-gray-700">Cancelar</button>
+                <button type="button" onClick={fecharModal} className="px-6 py-2.5 text-sm font-bold text-gray-500 hover:text-gray-700">Cancelar</button>
                 <button 
                   type="submit"
                   disabled={carregando || status === 'success'}
@@ -392,7 +514,7 @@ export function Tecnicos() {
                   ) : status === 'success' ? (
                     <>
                       <CheckCircle2 className="w-5 h-5" />
-                      <span>Técnico Criado!</span>
+                      <span>{tecnicoEmEdicao ? 'Técnico Atualizado!' : 'Técnico Criado!'}</span>
                     </>
                   ) : status === 'error' ? (
                     <>
@@ -402,7 +524,7 @@ export function Tecnicos() {
                   ) : (
                     <>
                       <Plus className="w-5 h-5" />
-                      <span>Salvar Técnico</span>
+                      <span>{tecnicoEmEdicao ? 'Guardar Alterações' : 'Salvar Técnico'}</span>
                     </>
                   )}
                 </button>
@@ -427,6 +549,26 @@ export function Tecnicos() {
             </div>
 
             <div className="p-8 space-y-6 max-h-[75vh] overflow-y-auto">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 p-4 bg-gray-50 border border-gray-100 rounded-2xl">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Semana do relatório</label>
+                  <input
+                    type="date"
+                    value={semanaRelatorio}
+                    onChange={(e) => setSemanaRelatorio(e.target.value)}
+                    className="block px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <button
+                  onClick={imprimirRelatorio}
+                  disabled={imprimindoRelatorio || !semanaRelatorio}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-60"
+                >
+                  {imprimindoRelatorio ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+                  Imprimir relatório semanal
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-5 bg-indigo-50 rounded-2xl border border-indigo-100">
                   <p className="text-xs font-black text-indigo-400 uppercase tracking-widest">Intervenções ativas</p>

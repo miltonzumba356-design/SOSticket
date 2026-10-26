@@ -66,24 +66,87 @@ function formatHora(value?: string | null) {
   return data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
 }
 
-function statusStyle(status?: string) {
+type CorStatus = 'azul' | 'ambar' | 'verde' | 'roxo' | 'cinza' | 'vermelho';
+
+function corDoStatus(status?: string): CorStatus {
   switch (status) {
-    case 'concluido':
-    case 'concluida':
-      return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
     case 'em_andamento':
     case 'em_progresso':
-      return 'bg-amber-100 text-amber-900 border border-amber-300';
+      return 'ambar';
+    case 'concluido':
+    case 'concluida':
+      return 'verde';
+    case 'verificado':
+      return 'roxo';
     case 'cancelada':
     case 'cancelado':
-      return 'bg-red-100 text-red-800 border border-red-300';
-    case 'verificado':
-      return 'bg-teal-100 text-teal-900 border border-teal-300';
+      return 'cinza';
     case 'expirado':
-      return 'bg-orange-100 text-orange-900 border border-orange-300';
+      return 'vermelho';
     default:
-      return 'bg-blue-100 text-blue-800 border border-blue-300';
+      return 'azul';
   }
+}
+
+// Classes completas (o Tailwind precisa de as ver escritas) para o chip do dia e para o distintivo da lista.
+const ESTILOS_STATUS: Record<CorStatus, { chip: string; titulo: string; texto: string; distintivo: string }> = {
+  azul: {
+    chip: 'bg-blue-100 border-blue-500',
+    titulo: 'text-blue-950',
+    texto: 'text-blue-800',
+    distintivo: 'bg-blue-600 text-white',
+  },
+  ambar: {
+    chip: 'bg-amber-100 border-amber-500',
+    titulo: 'text-amber-950',
+    texto: 'text-amber-800',
+    distintivo: 'bg-amber-500 text-white',
+  },
+  verde: {
+    chip: 'bg-emerald-100 border-emerald-500',
+    titulo: 'text-emerald-950',
+    texto: 'text-emerald-800',
+    distintivo: 'bg-emerald-600 text-white',
+  },
+  roxo: {
+    chip: 'bg-purple-100 border-purple-500',
+    titulo: 'text-purple-950',
+    texto: 'text-purple-800',
+    distintivo: 'bg-purple-600 text-white',
+  },
+  cinza: {
+    chip: 'bg-gray-200 border-gray-500',
+    titulo: 'text-gray-900',
+    texto: 'text-gray-700',
+    distintivo: 'bg-gray-600 text-white',
+  },
+  vermelho: {
+    chip: 'bg-red-100 border-red-500',
+    titulo: 'text-red-950',
+    texto: 'text-red-800',
+    distintivo: 'bg-red-600 text-white',
+  },
+};
+
+const ROTULOS_STATUS: Record<string, string> = {
+  pendente: 'Pendente',
+  em_progresso: 'Em progresso',
+  em_andamento: 'Em andamento',
+  concluida: 'Concluída',
+  concluido: 'Concluído',
+  verificado: 'Verificado',
+  cancelada: 'Cancelada',
+  cancelado: 'Cancelado',
+  expirado: 'Expirado',
+};
+
+function rotuloDoStatus(status?: string) {
+  if (!status) return '';
+  return ROTULOS_STATUS[status] || status.replace(/_/g, ' ');
+}
+
+function statusStyle(status?: string) {
+  return ESTILOS_STATUS[corDoStatus(status)].distintivo;
 }
 
 export function Calendario() {
@@ -402,40 +465,32 @@ export function Calendario() {
                   )}
                 </div>
                 <div className="space-y-1">
-                  {eventosDia.slice(0, 2).map((evento) => (
-                    <div
-                      key={`${evento.tipo}-${evento.id}`}
-                      className={`p-1.5 rounded-lg border ${
-                        evento.tipo === 'tarefa'
-                          ? 'bg-amber-100 border-amber-400'
-                          : 'bg-indigo-100 border-indigo-400'
-                      }`}
-                    >
-                      <p
-                        className={`text-[11px] font-bold truncate ${
-                          evento.tipo === 'tarefa' ? 'text-amber-950' : 'text-indigo-950'
-                        }`}
+                  {eventosDia.slice(0, 2).map((evento) => {
+                    const estilo = ESTILOS_STATUS[corDoStatus(evento.status)];
+                    return (
+                      <div
+                        key={`${evento.tipo}-${evento.id}`}
+                        className={`p-1.5 rounded-lg border-l-4 border ${estilo.chip}`}
                       >
-                        {evento.titulo}
-                      </p>
-                      {evento.horaInicio && (
+                        <p className={`text-[11px] font-bold truncate ${estilo.titulo}`}>
+                          {evento.titulo}
+                        </p>
                         <div className="flex items-center gap-1 mt-0.5">
-                          <Clock
-                            className={`w-2 h-2 ${
-                              evento.tipo === 'tarefa' ? 'text-amber-700' : 'text-indigo-700'
-                            }`}
-                          />
-                          <span
-                            className={`text-[10px] font-bold ${
-                              evento.tipo === 'tarefa' ? 'text-amber-800' : 'text-indigo-800'
-                            }`}
-                          >
-                            {evento.horaInicio}
-                          </span>
+                          {evento.horaInicio && (
+                            <>
+                              <Clock className={`w-2 h-2 ${estilo.texto}`} />
+                              <span className={`text-[10px] font-bold ${estilo.texto}`}>{evento.horaInicio}</span>
+                            </>
+                          )}
+                          {evento.status && (
+                            <span className={`text-[10px] font-black uppercase truncate ${estilo.texto}`}>
+                              {evento.horaInicio ? '· ' : ''}{rotuloDoStatus(evento.status)}
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                   {eventosDia.length > 2 && (
                     <p className="text-[10px] font-bold text-gray-600 pl-1">+{eventosDia.length - 2} mais</p>
                   )}
@@ -508,7 +563,7 @@ export function Calendario() {
                     </div>
                     {evento.status && (
                       <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase ${statusStyle(evento.status)}`}>
-                        {evento.status.replace('_', ' ')}
+                        {rotuloDoStatus(evento.status)}
                       </span>
                     )}
                     {evento.tipo === 'tarefa' && !isCliente && podeExecutar(tarefaEvento) && (

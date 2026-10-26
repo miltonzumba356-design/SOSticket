@@ -21,7 +21,11 @@ const API_ORIGIN = /^https?:\/\//.test(rawApiBaseUrl)
 
 export function resolverUrlFicheiro(url?: string | null) {
   if (!url) return undefined;
-  if (/^(https?:|blob:|data:)/.test(url)) return url;
+  if (/^(blob:|data:)/.test(url)) return url;
+  // Páginas https bloqueiam imagens http (conteúdo misto): usa https para ficheiros do backend.
+  if (/^https?:/.test(url)) {
+    return typeof window !== 'undefined' && window.location.protocol === 'https:' ? url.replace(/^http:/, 'https:') : url;
+  }
   return `${API_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 

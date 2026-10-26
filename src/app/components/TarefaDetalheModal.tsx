@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { resolverUrlFicheiro, tarefasService, tecnicosService } from '../services/api';
+import { AvatarUtilizador } from './Avatar';
 import { EstadoTarefa, Prioridade, Tarefa, TarefaRequest, Tecnico } from '../types/api';
 
 interface TarefaDetalheModalProps {
@@ -110,6 +111,7 @@ export function TarefaDetalheModal({ aberto, tarefa, onFechar, onAtualizado, pod
   const [inputAnexoKey, setInputAnexoKey] = useState(0);
   const [anexosTarefa, setAnexosTarefa] = useState<Array<{ id?: string; nome: string; url?: string; descricao?: string }>>([]);
   const [carregandoAnexos, setCarregandoAnexos] = useState(false);
+  const [anexoAEliminar, setAnexoAEliminar] = useState<string | null>(null);
   const [modoEdicao, setModoEdicao] = useState(false);
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -193,6 +195,31 @@ export function TarefaDetalheModal({ aberto, tarefa, onFechar, onAtualizado, pod
       setErro(error?.message || 'Falha ao atualizar a tarefa.');
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const handleRemoverAnexo = async (anexo: { id?: string; nome: string }) => {
+    if (!anexo.id) {
+      setErro('Este documento não tem identificador e não pode ser eliminado.');
+      return;
+    }
+    if (!window.confirm(`Eliminar o documento "${anexo.nome}"?`)) return;
+
+    setErro('');
+    setAnexoAEliminar(anexo.id);
+
+    try {
+      await tarefasService.removerAnexo(tarefa.id, anexo.id);
+      setAnexosTarefa(await buscarAnexos(tarefa.id));
+    } catch (error: any) {
+      console.error('Erro ao eliminar anexo da tarefa:', error);
+      setErro(
+        error?.status === 404 || error?.status === 405
+          ? 'O servidor ainda não permite eliminar anexos de tarefas (falta o endpoint DELETE /tarefas/{id}/anexos/{anexo_id}).'
+          : error?.message || 'Falha ao eliminar o documento.'
+      );
+    } finally {
+      setAnexoAEliminar(null);
     }
   };
 
@@ -441,9 +468,14 @@ export function TarefaDetalheModal({ aberto, tarefa, onFechar, onAtualizado, pod
                 <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400 flex items-center gap-1">
                   <UserCog className="w-3 h-3" /> Atribuído a
                 </p>
-                <p className="text-sm font-bold text-gray-900 mt-1">
-                  {tarefa.atribuido_a?.nome ? `${tarefa.atribuido_a.nome}${tarefa.atribuido_a.email ? ` (${tarefa.atribuido_a.email})` : ''}` : 'Sem atribuição'}
-                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  {tarefa.atribuido_a?.nome && (
+                    <AvatarUtilizador id={tarefa.atribuido_a.id} email={tarefa.atribuido_a.email} nome={tarefa.atribuido_a.nome} className="w-7 h-7 text-xs" />
+                  )}
+                  <p className="text-sm font-bold text-gray-900">
+                    {tarefa.atribuido_a?.nome ? `${tarefa.atribuido_a.nome}${tarefa.atribuido_a.email ? ` (${tarefa.atribuido_a.email})` : ''}` : 'Sem atribuição'}
+                  </p>
+                </div>
               </div>
               <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100">
                 <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Criado</p>
@@ -456,9 +488,12 @@ export function TarefaDetalheModal({ aberto, tarefa, onFechar, onAtualizado, pod
               {tarefa.criado_por?.nome && (
                 <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100 sm:col-span-2">
                   <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Criado por</p>
-                  <p className="text-sm font-bold text-gray-900 mt-1">
-                    {tarefa.criado_por.nome}{tarefa.criado_por.email ? ` (${tarefa.criado_por.email})` : ''}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <AvatarUtilizador id={tarefa.criado_por.id} email={tarefa.criado_por.email} nome={tarefa.criado_por.nome} className="w-7 h-7 text-xs" />
+                    <p className="text-sm font-bold text-gray-900">
+                      {tarefa.criado_por.nome}{tarefa.criado_por.email ? ` (${tarefa.criado_por.email})` : ''}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -482,6 +517,7 @@ export function TarefaDetalheModal({ aberto, tarefa, onFechar, onAtualizado, pod
                 <ul className="space-y-1.5">
                   {anexosTarefa.map((anexo, index) => (
                     <li key={anexo.id || index}>
+                      <div className="flex items-center justify-between gap-2">
                       {anexo.url ? (
                         <a
                           href={anexo.url}
@@ -498,6 +534,18 @@ export function TarefaDetalheModal({ aberto, tarefa, onFechar, onAtualizado, pod
                           <span className="truncate">{anexo.nome}</span>
                         </span>
                       )}
+                      {(podeGerir || podeExecutar) && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoverAnexo(anexo)}
+                          disabled={anexoAEliminar === anexo.id}
+                          title="Eliminar documento"
+                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+                        >
+                          {anexoAEliminar === anexo.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                      </div>
                       {anexo.descricao && <p className="text-[11px] text-gray-500 ml-5">{anexo.descricao}</p>}
                     </li>
                   ))}

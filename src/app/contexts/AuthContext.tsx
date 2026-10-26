@@ -23,6 +23,7 @@ interface AuthContextData {
   isAuthenticated: boolean;
   carregando: boolean;
   register: (dados: any) => Promise<void>;
+  atualizarUsuario: (dados: Partial<Usuario>) => void;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -171,6 +172,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Atualiza o utilizador em memória e no armazenamento local (ex.: nova foto de perfil)
+  const atualizarUsuario = (dados: Partial<Usuario>) => {
+    setUsuario((atual) => {
+      if (!atual) return atual;
+      const atualizado = { ...atual, ...dados };
+      localStorage.setItem('auth_user', JSON.stringify(atualizado));
+      return atualizado;
+    });
+  };
+
   // FunÃ§Ã£o de cadastro - chama API /api/v1/auth/register
   const register = async (dados: any) => {
     try {
@@ -190,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       register,
+      atualizarUsuario,
       isAuthenticated: !!usuario,
       carregando,
     }}>

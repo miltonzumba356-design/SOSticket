@@ -15,6 +15,8 @@ export const tarefasService = {
   cancelar: (id: string) => create(`/tarefas/${id}/cancelar`, {}),
   listarComentarios: (id: string) => fetchAPI(`/tarefas/${id}/comentarios`),
   adicionarComentario: (id: string, texto: string) => create(`/tarefas/${id}/comentarios`, { texto }),
+  removerAnexo: (id: string, anexoId: string) =>
+    fetchAPI<void>(`/tarefas/${id}/anexos/${anexoId}`, { method: 'DELETE' }),
   carregarAnexo: (id: string, dados: File | { arquivo: File | File[]; descricao?: string }) => {
     const formData = new FormData();
     const arquivos = dados instanceof File ? [dados] : ([] as File[]).concat(dados.arquivo);

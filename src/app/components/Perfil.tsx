@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Camera, CheckCircle2, Loader2, Lock, LogOut, Mail, Phone, Save, Shield, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCronometro } from '../contexts/CronometroContext';
 import { perfilService } from '../services/api';
+import { Avatar } from './Avatar';
+import { invalidarDiretorioAvatares } from '../utils/diretorioAvatares';
+import { RecortarFotoModal } from './RecortarFotoModal';
 import { Usuario } from '../types/api';
 
 export function Perfil() {
-  const { usuario, logout } = useAuth();
+  const { usuario, logout, atualizarUsuario } = useAuth();
   const { cronometros } = useCronometro();
   const [abaAtiva, setAbaAtiva] = useState<'info' | 'senha' | 'notificacoes'>('info');
   const [perfil, setPerfil] = useState<Usuario | null>(usuario);
@@ -27,6 +30,9 @@ export function Perfil() {
     acesso_conta: false,
   });
   const [carregando, setCarregando] = useState(true);
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [fotoParaRecortar, setFotoParaRecortar] = useState<File | null>(null);
+  const inputFotoRef = useRef<HTMLInputElement>(null);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
@@ -68,7 +74,6 @@ export function Perfil() {
       const atualizado = await perfilService.atualizar({
         nome: formData.nome,
         telefone: formData.telefone,
-        avatar_url: formData.avatar_url,
         preferencias,
       });
       const dados = { ...(perfil || usuario), ...(atualizado || {}), ...formData, preferencias } as Usuario;
@@ -80,6 +85,58 @@ export function Perfil() {
       setErro(error?.message || 'Falha ao atualizar perfil.');
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const handleEscolherFoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const ficheiro = event.target.files?.[0];
+    event.target.value = '';
+    if (!ficheiro) return;
+
+    if (!ficheiro.type.startsWith('image/')) {
+      setErro('Escolha um ficheiro de imagem (JPG, PNG, WEBP...).');
+      return;
+    }
+    if (ficheiro.size > 5 * 1024 * 1024) {
+      setErro('A imagem é demasiado grande. O máximo é 5 MB.');
+      return;
+    }
+
+    setErro('');
+    setSucesso('');
+    setFotoParaRecortar(ficheiro);
+  };
+
+  const enviarFotoRecortada = async (ficheiro: File) => {
+    setFotoParaRecortar(null);
+    setEnviandoFoto(true);
+    setErro('');
+    setSucesso('');
+    try {
+      const atualizado: any = await perfilService.atualizarAvatar({
+        nome: formData.nome || perfil?.nome || usuario?.nome || '',
+        avatar: ficheiro,
+      });
+
+      let avatarUrl: string | undefined = atualizado?.avatar_url;
+      if (!avatarUrl) {
+        const recarregado: any = await perfilService.listar();
+        const dados = Array.isArray(recarregado) ? recarregado[0] : recarregado?.results?.[0] || recarregado;
+        avatarUrl = dados?.avatar_url;
+      }
+
+      if (avatarUrl) {
+        setFormData((prev) => ({ ...prev, avatar_url: avatarUrl as string }));
+        setPerfil((prev) => ({ ...(prev || (usuario as Usuario)), avatar_url: avatarUrl } as Usuario));
+        atualizarUsuario({ avatar_url: avatarUrl });
+        invalidarDiretorioAvatares();
+      }
+      setSucesso('Foto de perfil atualizada.');
+    } catch (error: any) {
+      console.error('Erro ao atualizar foto de perfil:', error);
+      setErro(error?.message || 'Falha ao atualizar a foto de perfil.');
+    } finally {
+      setEnviandoFoto(false);
     }
   };
 
@@ -136,6 +193,12 @@ export function Perfil() {
         </button>
       </div>
 
+      <RecortarFotoModal
+        ficheiro={fotoParaRecortar}
+        onCancelar={() => setFotoParaRecortar(null)}
+        onConfirmar={enviarFotoRecortada}
+      />
+
       {erro && <Message type="error" text={erro} />}
       {sucesso && <Message type="success" text={sucesso} />}
 
@@ -148,12 +211,28 @@ export function Perfil() {
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden text-center p-8">
               <div className="relative inline-block mb-6">
-                <div className="w-32 h-32 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center text-white text-4xl font-black shadow-xl shadow-indigo-100 border-4 border-white">
-                  {nomePerfil.substring(0, 1).toUpperCase()}
-                </div>
-                <div className="absolute bottom-1 right-1 p-2 bg-white rounded-full shadow-lg border border-gray-100 text-indigo-600">
-                  <Camera className="w-4 h-4" />
-                </div>
+                <Avatar
+                  nome={nomePerfil}
+                  url={perfil?.avatar_url || usuario?.avatar_url}
+                  className="w-32 h-32 text-4xl shadow-xl shadow-indigo-100 border-4 border-white"
+                />
+                <input
+                  ref={inputFotoRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleEscolherFoto}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => inputFotoRef.current?.click()}
+                  disabled={enviandoFoto}
+                  title="Alterar foto de perfil"
+                  aria-label="Alterar foto de perfil"
+                  className="absolute bottom-1 right-1 p-2 bg-white rounded-full shadow-lg border border-gray-100 text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-60"
+                >
+                  {enviandoFoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                </button>
               </div>
               <h3 className="text-xl font-bold text-gray-900">{nomePerfil}</h3>
               <p className="text-sm font-medium text-indigo-600 bg-indigo-50 inline-block px-3 py-1 rounded-full mt-2 uppercase tracking-wider">
@@ -190,7 +269,6 @@ export function Perfil() {
                       <InputField label="Nome" value={formData.nome} onChange={(value) => setFormData((prev) => ({ ...prev, nome: value }))} required />
                       <InputField label="Email" value={perfil?.email || usuario?.email || ''} disabled />
                       <InputField label="Telefone" value={formData.telefone} onChange={(value) => setFormData((prev) => ({ ...prev, telefone: value }))} />
-                      <InputField label="Avatar URL" value={formData.avatar_url} onChange={(value) => setFormData((prev) => ({ ...prev, avatar_url: value }))} />
                     </div>
                     <SubmitButton saving={salvando} label="Atualizar Perfil" />
                   </form>

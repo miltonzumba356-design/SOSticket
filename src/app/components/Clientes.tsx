@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Cliente, ClienteRequest, Empresa } from '../types/api';
 import { clientesService, empresasService } from '../services/api';
+import { Avatar } from './Avatar';
 import { 
   Search, 
   Plus, 
@@ -332,9 +333,7 @@ export function Clientes() {
                 <tr key={cliente.id} className="hover:bg-gray-50/30 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                        {cliente.nome.substring(0, 1).toUpperCase()}
-                      </div>
+                      <Avatar nome={cliente.nome} url={cliente.avatar_url} className="w-10 h-10 text-base" />
                       <div>
                         <p className="text-sm font-bold text-gray-900">{cliente.nome}</p>
                         <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">

@@ -5,6 +5,7 @@ import { intervencoesService, contratosService, clientesService, tecnicosService
 import { useAuth } from '../contexts/AuthContext';
 import { useCronometro } from '../contexts/CronometroContext';
 import { formatarHoras } from '../utils/formatters';
+import { AvatarUtilizador } from './Avatar';
 import { 
   Search, 
   Plus, 
@@ -869,13 +870,17 @@ export function Intervencoes({ onNavigate }: { onNavigate?: (pagina: string) => 
                 <h3 className="text-base font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{intervencao.titulo}</h3>
                 <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-gray-500">
                   <div className="flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-gray-400" />
+                    <AvatarUtilizador id={intervencao.cliente_id} nome={intervencao.cliente_nome} className="w-5 h-5 text-[10px]" />
                     <span className="font-medium">{intervencao.cliente_nome}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
-                       <User className="w-3 h-3 text-gray-400" />
-                    </div>
+                    {intervencao.tecnico_nome ? (
+                      <AvatarUtilizador id={intervencao.tecnico_id} nome={intervencao.tecnico_nome} className="w-5 h-5 text-[10px]" />
+                    ) : (
+                      <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                        <User className="w-3 h-3 text-gray-400" />
+                      </div>
+                    )}
                     <span className="font-medium">{intervencao.tecnico_nome || 'Aguardando Atribuição'}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -1133,15 +1138,17 @@ export function Intervencoes({ onNavigate }: { onNavigate?: (pagina: string) => 
                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Responsáveis</h4>
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
-                            <User className="w-4 h-4" />
-                          </div>
+                          <AvatarUtilizador id={intervencaoDetalhe.cliente_id} nome={intervencaoDetalhe.cliente_nome} className="w-8 h-8 text-sm" />
                           <span className="text-sm font-bold text-gray-700">{intervencaoDetalhe.cliente_nome}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
-                            <ShieldCheck className="w-4 h-4" />
-                          </div>
+                          {intervencaoDetalhe.tecnico_nome ? (
+                            <AvatarUtilizador id={intervencaoDetalhe.tecnico_id} nome={intervencaoDetalhe.tecnico_nome} className="w-8 h-8 text-sm" />
+                          ) : (
+                            <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
+                              <ShieldCheck className="w-4 h-4" />
+                            </div>
+                          )}
                           <span className="text-sm font-bold text-gray-700">{intervencaoDetalhe.tecnico_nome || 'Não atribuído'}</span>
                         </div>
                       </div>

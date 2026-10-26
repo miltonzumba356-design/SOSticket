@@ -3,6 +3,7 @@ import { Tecnico } from '../types/api';
 import { tecnicosService } from '../services/api';
 import { formatarHoras } from '../utils/formatters';
 import { imprimirRelatorioSemanal, paraInputData } from '../utils/relatorioSemanal';
+import { Avatar, AvatarUtilizador } from './Avatar';
 import { 
   Plus, 
   Search, 
@@ -277,9 +278,13 @@ export function Tecnicos() {
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="relative">
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-blue-50 rounded-2xl flex items-center justify-center text-indigo-600">
-                    <User className="w-8 h-8" />
-                  </div>
+                  {tecnico.avatar_url ? (
+                    <AvatarUtilizador id={tecnico.id} email={tecnico.email} nome={tecnico.nome} url={tecnico.avatar_url} className="w-16 h-16 text-2xl !rounded-2xl" />
+                  ) : (
+                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-blue-50 rounded-2xl flex items-center justify-center text-indigo-600">
+                      <User className="w-8 h-8" />
+                    </div>
+                  )}
                   <div className={`absolute -bottom-1 -right-1 w-6 h-6 ${tecnico.status === 'activo' ? 'bg-emerald-500' : 'bg-red-500'} border-4 border-white rounded-full flex items-center justify-center`} title={tecnico.status === 'activo' ? 'Ativo' : 'Inativo'}>
                     <CheckCircle className="w-3 h-3 text-white" />
                   </div>
@@ -538,10 +543,13 @@ export function Tecnicos() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden">
             <div className="p-6 bg-indigo-600 text-white flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-widest text-indigo-100">Performance técnica</p>
-                <h3 className="text-2xl font-black">{tecnicoPerformance.nome}</h3>
-                <p className="text-sm text-indigo-100">{tecnicoPerformance.email}</p>
+              <div className="flex items-center gap-4">
+                <Avatar nome={tecnicoPerformance.nome} url={tecnicoPerformance.avatar_url} className="w-16 h-16 text-2xl border-2 border-white/60" />
+                <div>
+                  <p className="text-xs font-black uppercase tracking-widest text-indigo-100">Performance técnica</p>
+                  <h3 className="text-2xl font-black">{tecnicoPerformance.nome}</h3>
+                  <p className="text-sm text-indigo-100">{tecnicoPerformance.email}</p>
+                </div>
               </div>
               <button onClick={() => setExibirPerformance(false)} className="p-2 hover:bg-white/20 rounded-full">
                 <X className="w-5 h-5" />

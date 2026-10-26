@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCronometro } from '../contexts/CronometroContext';
 import { adminMenu, MenuItem } from '../data/AdminMenu';
 import { notificacoesService } from '../services/api';
+import { Avatar } from './Avatar';
 import { whatsappService } from '../services/whatsapp';
 import { Notificacao } from '../types/api';
 import {
@@ -304,6 +305,7 @@ export function Layout({ children, paginaAtual, onNavigate }: LayoutProps) {
             )}
             </div>
             <div className="hidden sm:flex items-center gap-3">
+              <Avatar nome={usuario?.nome} url={usuario?.avatar_url} className="w-9 h-9 text-sm" />
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">{usuario?.nome}</p>
                 <p className="text-xs text-gray-500 capitalize">{usuario?.perfil}</p>

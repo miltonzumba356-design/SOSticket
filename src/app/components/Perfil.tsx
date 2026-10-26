@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { AlertCircle, Camera, CheckCircle2, Loader2, Lock, LogOut, Mail, Phone, Save, Shield, Trash2, User } from 'lucide-react';
+import { AlertCircle, Camera, CheckCircle2, Loader2, Lock, LogOut, Mail, Phone, Save, Trash2, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCronometro } from '../contexts/CronometroContext';
 import { perfilService } from '../services/api';
@@ -298,15 +298,6 @@ export function Perfil() {
               <div className="mt-8 space-y-4 text-left">
                 <Info icon={Mail} text={perfil?.email || usuario?.email || '-'} />
                 <Info icon={Phone} text={perfil?.telefone || 'Sem telefone'} />
-              </div>
-            </div>
-
-            <div className="bg-indigo-600 rounded-3xl p-6 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
-              <Shield className="absolute -right-4 -bottom-4 w-32 h-32 text-white/10" />
-              <h4 className="text-lg font-bold mb-2">Conta Ativa</h4>
-              <p className="text-sm text-white/80 leading-relaxed mb-4">Perfil autenticado com JWT e permissões do backend.</p>
-              <div className="inline-flex items-center gap-2 text-xs font-bold bg-white/20 px-3 py-1.5 rounded-lg">
-                <CheckCircle2 className="w-3 h-3" /> STATUS OK
               </div>
             </div>
           </div>

@@ -150,13 +150,6 @@ const dadosStatusBase = [
   { chave: 'concluido', name: 'Concluídas', total: 0, fill: '#7c3aed' },
 ];
 
-const dadosMockHorasTecnico = [
-  { name: 'João Silva', value: 45 },
-  { name: 'Maria Santos', value: 38 },
-  { name: 'Pedro Costa', value: 32 },
-  { name: 'Ana Oliveira', value: 28 },
-];
-
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 function mesLabel(data: Date) {
@@ -327,6 +320,7 @@ export function Dashboard({ onNavigate }: { onNavigate?: (pagina: string) => voi
     : serieMensalContratos(contratosDashboard);
   const evolucaoIntervencoes = serieMensalIntervencoes(intervencoes, isAdmin ? dadosDashboard : null);
   const ultimasIntervencoes = intervencoes.slice(0, 5);
+
   const periodoAtual = new Date().toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' });
   const menu = (id: string, items: Array<{ label: string; onClick: () => void; danger?: boolean }>) => (
     <ActionMenu id={id} activeId={menuAberto} setActiveId={setMenuAberto} items={items} />
@@ -566,10 +560,13 @@ export function Dashboard({ onNavigate }: { onNavigate?: (pagina: string) => voi
               {menu('grafico-horas-tecnico', [atualizarItem, { label: 'Ver técnicos', onClick: () => onNavigate?.('tecnicos') }, { label: 'Ver relatórios', onClick: () => onNavigate?.('relatorios') }])}
             </div>
             <div className="h-72">
+              {!carregando && dadosHorasTecnico.length === 0 && (
+                <p className="text-center text-sm text-gray-400 pt-28">Sem horas registadas por técnicos.</p>
+              )}
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={dadosHorasTecnico.length > 0 ? dadosHorasTecnico : dadosMockHorasTecnico}
+                    data={dadosHorasTecnico}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -577,7 +574,7 @@ export function Dashboard({ onNavigate }: { onNavigate?: (pagina: string) => voi
                     paddingAngle={8}
                     dataKey="value"
                   >
-                    {(dadosHorasTecnico.length > 0 ? dadosHorasTecnico : dadosMockHorasTecnico).map((entry: any, index: number) => (
+                    {dadosHorasTecnico.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -594,7 +591,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (pagina: string) => voi
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-lg font-bold text-gray-900">Receita Mensal</h3>
               <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">+12.5%</span>
                 {menu('grafico-receita', [atualizarItem, { label: 'Ver contratos', onClick: () => onNavigate?.('contratos') }, { label: 'Ver relatórios', onClick: () => onNavigate?.('relatorios') }])}
               </div>
             </div>
@@ -754,34 +750,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (pagina: string) => voi
             </div>
           </div>
         )}
-      </div>
-
-      {/* 4. Alertas e Notificações */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="relative bg-red-50 border border-red-100 p-5 rounded-2xl flex items-start gap-4 hover:shadow-lg hover:shadow-red-50 transition-all duration-300">
-          <div className="p-3 bg-red-100 rounded-xl shadow-sm"><AlertCircle className="w-6 h-6 text-red-600" /></div>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-red-900">Contratos expirando</p>
-            <p className="text-xs text-red-700 mt-1">Existem 2 contratos que vencem nos próximos 30 dias. Ação necessária.</p>
-          </div>
-          {menu('alerta-contratos', [atualizarItem, { label: 'Ver contratos', onClick: () => onNavigate?.('contratos') }])}
-        </div>
-        <div className="relative bg-amber-50 border border-amber-100 p-5 rounded-2xl flex items-start gap-4 hover:shadow-lg hover:shadow-amber-50 transition-all duration-300">
-          <div className="p-3 bg-amber-100 rounded-xl shadow-sm"><Users className="w-6 h-6 text-amber-600" /></div>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-amber-900">Sem Técnico</p>
-            <p className="text-xs text-amber-700 mt-1">3 intervenções abertas aguardam atribuição de técnico.</p>
-          </div>
-          {menu('alerta-tecnicos', [atualizarItem, { label: 'Ver intervenções', onClick: () => onNavigate?.('intervencoes') }, { label: 'Ver técnicos', onClick: () => onNavigate?.('tecnicos') }])}
-        </div>
-        <div className="relative bg-indigo-50 border border-indigo-100 p-5 rounded-2xl flex items-start gap-4 hover:shadow-lg hover:shadow-indigo-50 transition-all duration-300">
-          <div className="p-3 bg-indigo-100 rounded-xl shadow-sm"><TrendingUp className="w-6 h-6 text-indigo-600" /></div>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-indigo-900">Consumo de Horas</p>
-            <p className="text-xs text-indigo-700 mt-1">Cliente Safir atingiu 85% do pacote de horas mensal.</p>
-          </div>
-          {menu('alerta-horas', [atualizarItem, { label: 'Ver contratos', onClick: () => onNavigate?.('contratos') }, { label: 'Ver horas', onClick: () => onNavigate?.('horas') }])}
-        </div>
       </div>
     </div>
   );

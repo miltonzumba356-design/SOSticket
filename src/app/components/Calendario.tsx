@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -522,9 +523,12 @@ export function Calendario() {
                 const data = toDate(evento.data);
                 const tarefaEvento = tarefas.find((t) => t.id === evento.id) || null;
                 return (
-                  <div
+                  <motion.div
                     key={`${evento.tipo}-${evento.id}`}
-                    className="flex items-center gap-4 p-4 bg-white rounded-2xl hover:bg-gray-50 transition-all border border-gray-300 hover:border-gray-400 shadow-sm"
+                    initial={{ opacity: 0, x: -14 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                    className="flex items-center gap-4 p-4 bg-white rounded-2xl hover:bg-gray-50 transition-colors border border-gray-300 hover:border-gray-400 shadow-sm"
                   >
                     <div className="w-12 h-12 bg-gray-100 rounded-xl flex flex-col items-center justify-center shadow-sm border border-gray-300">
                       <span className="text-[9px] font-black text-gray-600 uppercase">
@@ -605,7 +609,7 @@ export function Calendario() {
                         }}
                       />
                     )}
-                  </div>
+                  </motion.div>
                 );
               })
             )}

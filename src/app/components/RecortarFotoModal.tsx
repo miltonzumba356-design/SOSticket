@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import { Check, Loader2, X, ZoomIn } from 'lucide-react';
 
 interface RecortarFotoModalProps {
@@ -110,8 +111,18 @@ export function RecortarFotoModal({ ficheiro, onCancelar, onConfirmar }: Recorta
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+        className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden"
+      >
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-black text-gray-900">Enquadrar foto</h3>
@@ -190,7 +201,7 @@ export function RecortarFotoModal({ ficheiro, onCancelar, onConfirmar }: Recorta
             </button>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

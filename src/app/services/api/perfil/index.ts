@@ -10,6 +10,15 @@ export const perfilService = {
     formData.append('avatar_url', dados.avatar);
     return update<Usuario>('/perfil', formData);
   },
+  async removerAvatar(nome: string) {
+    // A API não documenta como limpar o avatar: tenta primeiro com texto vazio e depois com null.
+    try {
+      return await update<Usuario>('/perfil', { nome, avatar_url: '' });
+    } catch (error: any) {
+      if (error?.status !== 400) throw error;
+      return update<Usuario>('/perfil', { nome, avatar_url: null });
+    }
+  },
   alterarSenha: (dados: { password_atual: string; password_nova: string }) =>
     update<void>('/perfil/password', dados),
 };

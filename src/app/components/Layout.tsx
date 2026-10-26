@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCronometro } from '../contexts/CronometroContext';
 import { adminMenu, MenuItem } from '../data/AdminMenu';
@@ -259,7 +260,13 @@ export function Layout({ children, paginaAtual, onNavigate }: LayoutProps) {
               </button>
             </div>
             {painelNotificacoes && (
-              <div className="absolute right-0 top-14 w-[min(380px,calc(100vw-2rem))] bg-white border border-gray-100 rounded-xl shadow-2xl shadow-slate-200 z-[80] overflow-hidden">
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                style={{ transformOrigin: 'top right' }}
+                className="absolute right-0 top-14 w-[min(380px,calc(100vw-2rem))] bg-white border border-gray-100 rounded-xl shadow-2xl shadow-slate-200 z-[80] overflow-hidden"
+              >
                 <div className={`${notificacoesNaoLidas > 0 ? 'bg-red-600 text-white' : 'bg-white text-gray-900'} px-4 py-4 border-b border-gray-100 flex items-center justify-between`}>
                   <div>
                     <p className="text-sm font-black">Notificações</p>
@@ -301,7 +308,7 @@ export function Layout({ children, paginaAtual, onNavigate }: LayoutProps) {
                     </button>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
             </div>
             <div className="hidden sm:flex items-center gap-3">
@@ -359,7 +366,14 @@ export function Layout({ children, paginaAtual, onNavigate }: LayoutProps) {
         )}
 
         <main className="flex-1 p-6 overflow-y-auto h-[calc(100vh-60px)] relative">
-          {children}
+          <motion.div
+            key={paginaAtual}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
+          >
+            {children}
+          </motion.div>
           {usuario?.perfil === 'tecnico' && <WidgetCronometro />}
         </main>
       </div>

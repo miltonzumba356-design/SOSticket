@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { Tecnico } from '../types/api';
 import { tecnicosService } from '../services/api';
 import { formatarHoras } from '../utils/formatters';
@@ -273,8 +274,15 @@ export function Tecnicos() {
              <User className="w-12 h-12 text-gray-200 mx-auto mb-2" />
              <p className="text-gray-500">Nenhum técnico encontrado.</p>
           </div>
-        ) : tecnicos.filter(t => t && t.id).map((tecnico) => (
-          <div key={tecnico.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all group overflow-hidden">
+        ) : tecnicos.filter(t => t && t.id).map((tecnico, indice) => (
+          <motion.div
+            key={tecnico.id}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -4 }}
+            transition={{ duration: 0.3, delay: Math.min(indice, 8) * 0.05, ease: 'easeOut' }}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg group overflow-hidden"
+          >
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="relative">
@@ -300,7 +308,13 @@ export function Tecnicos() {
                     <MoreVertical className="w-5 h-5 text-gray-400" />
                   </button>
                   {menuTecnicoAberto === tecnico.id && (
-                    <div className="absolute right-0 top-9 w-44 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden text-left">
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                      style={{ transformOrigin: 'top right' }}
+                      className="absolute right-0 top-9 w-44 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden text-left"
+                    >
                       <button
                         onClick={() => {
                           setMenuTecnicoAberto(null);
@@ -319,7 +333,7 @@ export function Tecnicos() {
                       >
                         <Trash2 className="w-4 h-4" /> Eliminar
                       </button>
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               </div>
@@ -377,14 +391,24 @@ export function Tecnicos() {
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
       {/* Modal Adicionar Técnico */}
       {exibirModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+            className="bg-white rounded-2xl w-full max-w-lg shadow-2xl"
+          >
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-xl font-bold text-gray-900">{tecnicoEmEdicao ? 'Editar Técnico' : 'Novo Técnico'}</h3>
               <button onClick={fecharModal} className="p-2 hover:bg-gray-100 rounded-full">
@@ -535,13 +559,23 @@ export function Tecnicos() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {exibirPerformance && tecnicoPerformance && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+            className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden"
+          >
             <div className="p-6 bg-indigo-600 text-white flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Avatar nome={tecnicoPerformance.nome} url={tecnicoPerformance.avatar_url} className="w-16 h-16 text-2xl border-2 border-white/60" />
@@ -622,8 +656,8 @@ export function Tecnicos() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

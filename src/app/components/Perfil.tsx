@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, Camera, CheckCircle2, Loader2, Lock, LogOut, Mail, Phone, Save, Shield, User } from 'lucide-react';
+import { motion } from 'motion/react';
+import { AlertCircle, Camera, CheckCircle2, Loader2, Lock, LogOut, Mail, Phone, Save, Shield, Trash2, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCronometro } from '../contexts/CronometroContext';
 import { perfilService } from '../services/api';
@@ -140,6 +141,36 @@ export function Perfil() {
     }
   };
 
+  const removerFoto = async () => {
+    if (!window.confirm('Eliminar a foto de perfil?')) return;
+
+    setEnviandoFoto(true);
+    setErro('');
+    setSucesso('');
+    try {
+      await perfilService.removerAvatar(formData.nome || perfil?.nome || usuario?.nome || '');
+
+      // Confirma no servidor: se a foto continuar lá, a remoção não foi aceite.
+      const recarregado: any = await perfilService.listar();
+      const dados = Array.isArray(recarregado) ? recarregado[0] : recarregado?.results?.[0] || recarregado;
+      if (dados?.avatar_url) {
+        setErro('O servidor não aceitou eliminar a foto de perfil.');
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, avatar_url: '' }));
+      setPerfil((prev) => ({ ...(prev || (usuario as Usuario)), avatar_url: '' } as Usuario));
+      atualizarUsuario({ avatar_url: '' });
+      invalidarDiretorioAvatares();
+      setSucesso('Foto de perfil eliminada.');
+    } catch (error: any) {
+      console.error('Erro ao eliminar foto de perfil:', error);
+      setErro(error?.message || 'Falha ao eliminar a foto de perfil.');
+    } finally {
+      setEnviandoFoto(false);
+    }
+  };
+
   const handleAlterarSenha = async (event: React.FormEvent) => {
     event.preventDefault();
     if (senha.password_nova !== senha.confirmar) {
@@ -211,11 +242,6 @@ export function Perfil() {
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden text-center p-8">
               <div className="relative inline-block mb-6">
-                <Avatar
-                  nome={nomePerfil}
-                  url={perfil?.avatar_url || usuario?.avatar_url}
-                  className="w-32 h-32 text-4xl shadow-xl shadow-indigo-100 border-4 border-white"
-                />
                 <input
                   ref={inputFotoRef}
                   type="file"
@@ -223,16 +249,47 @@ export function Perfil() {
                   onChange={handleEscolherFoto}
                   className="hidden"
                 />
-                <button
+                {/* Tocar na foto abre o seletor para a alterar */}
+                <motion.button
                   type="button"
                   onClick={() => inputFotoRef.current?.click()}
                   disabled={enviandoFoto}
                   title="Alterar foto de perfil"
                   aria-label="Alterar foto de perfil"
-                  className="absolute bottom-1 right-1 p-2 bg-white rounded-full shadow-lg border border-gray-100 text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-60"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                  className="block rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-wait"
                 >
-                  {enviandoFoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-                </button>
+                  <Avatar
+                    nome={nomePerfil}
+                    url={perfil?.avatar_url || usuario?.avatar_url}
+                    className="w-32 h-32 text-4xl shadow-xl shadow-indigo-100 border-4 border-white"
+                  />
+                </motion.button>
+                {(perfil?.avatar_url || usuario?.avatar_url) ? (
+                  <button
+                    type="button"
+                    onClick={removerFoto}
+                    disabled={enviandoFoto}
+                    title="Eliminar foto de perfil"
+                    aria-label="Eliminar foto de perfil"
+                    className="absolute bottom-1 right-1 p-2 bg-white rounded-full shadow-lg border border-gray-100 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60"
+                  >
+                    {enviandoFoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => inputFotoRef.current?.click()}
+                    disabled={enviandoFoto}
+                    title="Adicionar foto de perfil"
+                    aria-label="Adicionar foto de perfil"
+                    className="absolute bottom-1 right-1 p-2 bg-white rounded-full shadow-lg border border-gray-100 text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-60"
+                  >
+                    {enviandoFoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                  </button>
+                )}
               </div>
               <h3 className="text-xl font-bold text-gray-900">{nomePerfil}</h3>
               <p className="text-sm font-medium text-indigo-600 bg-indigo-50 inline-block px-3 py-1 rounded-full mt-2 uppercase tracking-wider">

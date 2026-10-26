@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MotionConfig } from 'motion/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Login } from './components/Login';
 import { Layout } from './components/Layout';
@@ -110,11 +111,13 @@ import { CronometroProvider } from './contexts/CronometroContext';
 // Componente raiz que envolve tudo com o AuthProvider
 export default function App() {
   return (
-    <AuthProvider>
-      <CronometroProvider>
-        <AppContent />
-      </CronometroProvider>
-      <PwaUpdatePrompt />
-    </AuthProvider>
+    <MotionConfig reducedMotion="user">
+      <AuthProvider>
+        <CronometroProvider>
+          <AppContent />
+        </CronometroProvider>
+        <PwaUpdatePrompt />
+      </AuthProvider>
+    </MotionConfig>
   );
 }

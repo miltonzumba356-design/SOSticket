@@ -174,6 +174,43 @@ export interface Intervencao {
   comentarios?: any[];
 }
 
+export type EstadoTarefa = 'pendente' | 'em_progresso' | 'concluida' | 'cancelada' | 'expirado';
+
+export interface PrazoTarefa {
+  total_horas: number;
+  restantes_horas: number;
+  expirado: boolean;
+}
+
+export interface Tarefa {
+  id: string;
+  numero?: string;
+  titulo: string;
+  descricao: string;
+  estado?: EstadoTarefa;
+  prioridade?: Prioridade;
+  atribuido_a?: { id: string; nome?: string; email?: string } | null;
+  criado_por?: { id: string; nome?: string; email?: string } | null;
+  intervencao?: Record<string, unknown> | null;
+  data_inicio?: string | null;
+  data_fim?: string | null;
+  prazo?: PrazoTarefa | null;
+  data_conclusao?: string | null;
+  data_criacao?: string;
+}
+
+export interface TarefaRequest {
+  titulo?: string;
+  descricao?: string;
+  estado?: EstadoTarefa;
+  prioridade?: Prioridade;
+  atribuido_a_id?: string | null;
+  intervencao_id?: string | null;
+  data_inicio?: string | null;
+  data_fim?: string | null;
+  data_conclusao?: string | null;
+}
+
 export interface HoraTrabalho {
   id: string;
   intervencao?: string;

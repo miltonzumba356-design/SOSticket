@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://suport-api-1.onrender.com/api/:path*"
+      "destination": "https://suportapi-production.up.railway.app/api/:path*"
     }
   ]
 }

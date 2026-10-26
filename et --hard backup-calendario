@@ -1,0 +1,7 @@
+[33m6b7eff4f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mRASH[m[33m, [m[1;31morigin/RASH[m[33m)[m HEAD@{0}: reset: moving to HEAD~1
+[33mc577c42f[m[33m ([m[1;32mbackup-calendario[m[33m)[m HEAD@{1}: reset: moving to HEAD
+[33mc577c42f[m[33m ([m[1;32mbackup-calendario[m[33m)[m HEAD@{2}: reset: moving to HEAD
+[33mc577c42f[m[33m ([m[1;32mbackup-calendario[m[33m)[m HEAD@{3}: commit: criação do Calendário
+[33m6b7eff4f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mRASH[m[33m, [m[1;31morigin/RASH[m[33m)[m HEAD@{4}: commit: Refactor servicos API em subpastas por endpoint e integra API Railway
+[33mbdd82662[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{5}: checkout: moving from master to RASH
+[33m461ecafc[m[33m ([m[1;32mmaster[m[33m)[m HEAD@{6}: commit (initial): Implementações ST

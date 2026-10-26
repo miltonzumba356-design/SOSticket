@@ -18,11 +18,10 @@ import {
   Download,
   Printer
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { intervencoesService, relatoriosService, contratosService } from '../services/api';
 import { Intervencao, Contrato } from '../types/api';
 import { formatarHoras } from '../utils/formatters';
+import { criarPdfRelatorio, PdfMetric, PdfTable } from '../utils/pdfRelatorio';
 import {
   BarChart,
   Bar,
@@ -326,38 +325,72 @@ export function Dashboard({ onNavigate }: { onNavigate?: (pagina: string) => voi
     <ActionMenu id={id} activeId={menuAberto} setActiveId={setMenuAberto} items={items} />
   );
   const atualizarItem = { label: 'Atualizar dados', onClick: carregarDados };
-  const imprimirDashboard = () => {
-    window.print();
+  // O PDF do dashboard segue o mesmo modelo do relatório geral: cabeçalho, cartões de métricas e tabelas.
+  const criarPdfDashboard = () => {
+    const metricas: PdfMetric[] = isAdmin
+      ? [
+          { label: 'Clientes', value: dadosDashboard?.total_clientes ?? dadosDashboard?.clientes_total ?? dadosDashboard?.clientes ?? 0, sub: 'Total registado' },
+          { label: 'Contratos ativos', value: dadosDashboard?.total_contratos_ativos ?? dadosDashboard?.contratos_ativos ?? dadosDashboard?.contratos ?? 0, sub: 'Status ativo' },
+          { label: 'Intervenções abertas', value: dadosDashboard?.intervencoes_abertas ?? dadosDashboard?.tickets_abertos ?? dadosDashboard?.total_intervencoes ?? 0, sub: 'Em aberto' },
+          { label: 'Receita total', value: `${Number(dadosDashboard?.receita_total ?? dadosDashboard?.total_receita ?? 0).toLocaleString()} Kz`, sub: 'Todos os contratos' },
+        ]
+      : isCliente
+        ? [
+            { label: 'Contratos ativos', value: dadosDashboard?.contratos_ativos ?? 0, sub: 'Status ativo' },
+            { label: 'Horas disponíveis', value: formatarHoras(dadosDashboard?.total_horas_disponiveis), sub: 'Nos contratos' },
+            { label: 'Tickets abertos', value: dadosDashboard?.intervencoes_abertas ?? 0, sub: 'Em aberto' },
+            { label: 'Concluídas (mês)', value: dadosDashboard?.intervencoes_concluidas ?? 0, sub: periodoAtual },
+          ]
+        : [
+            { label: 'Meus tickets', value: dadosDashboard?.intervencoes_atribuidas ?? 0, sub: 'Atribuídos' },
+            { label: 'Em andamento', value: dadosDashboard?.intervencoes_em_andamento ?? 0, sub: 'Neste momento' },
+            { label: 'Concluído (mês)', value: dadosDashboard?.intervencoes_concluidas_mes ?? 0, sub: periodoAtual },
+            { label: 'Horas trabalhadas', value: formatarHoras(dadosDashboard?.total_horas_mes), sub: periodoAtual },
+          ];
+
+    const tabelas: PdfTable[] = [
+      { titulo: 'Intervenções por status', colunas: ['Status', 'Total'], linhas: dadosIntervencoesStatus.map((item) => [item.name, item.total]) },
+      { titulo: 'Evolução de intervenções', colunas: ['Mês', 'Total'], linhas: evolucaoIntervencoes.map((item: any) => [item.date, item.total]) },
+      ...(isAdmin
+        ? [
+            { titulo: 'Horas por técnico', colunas: ['Técnico', 'Horas'], linhas: dadosHorasTecnico.map((item: any) => [item.name, item.value]) },
+            { titulo: 'Receita mensal', colunas: ['Mês', 'Receita'], linhas: receitaMensal.map((item: any) => [item.month, `${Number(item.receita || 0).toLocaleString()} Kz`]) },
+          ]
+        : []),
+      {
+        titulo: isAdmin ? 'Últimas intervenções' : 'Meus tickets recentes',
+        colunas: ['Número', 'Título', 'Cliente', 'Status'],
+        linhas: ultimasIntervencoes.map((ticket) => [ticket.numero || '-', ticket.titulo, ticket.cliente_nome || '-', ticket.status.replace('_', ' ')]),
+      },
+      ...(isAdmin
+        ? [
+            {
+              titulo: 'Contratos a expirar (30 dias)',
+              colunas: ['Contrato', 'Cliente', 'Data fim'],
+              linhas: contratosExpira.map((contrato) => [`#${contrato.id.substring(0, 8)}`, contrato.cliente_nome || '-', new Date(contrato.data_fim).toLocaleDateString('pt-PT')]),
+            },
+          ]
+        : []),
+    ];
+
+    return criarPdfRelatorio({
+      titulo: tituloDashboard,
+      usuario,
+      filtros: [`Período: ${periodoAtual}`],
+      metricas,
+      tabelas,
+    });
   };
 
-  const baixarDashboardPdf = async () => {
-    if (!dashboardRef.current) return;
+  const imprimirDashboard = () => {
+    const pdf = criarPdfDashboard();
+    pdf.autoPrint();
+    const janela = window.open(pdf.output('bloburl') as unknown as string, '_blank');
+    if (!janela) window.alert('O browser bloqueou a janela de impressão. Permita pop-ups para este site.');
+  };
 
-    const canvas = await html2canvas(dashboardRef.current, {
-      scale: 2,
-      backgroundColor: '#f9fafb',
-      useCORS: true,
-    });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-
-    pdf.save(`dashboard-admin-${new Date().toISOString().slice(0, 10)}.pdf`);
+  const baixarDashboardPdf = () => {
+    criarPdfDashboard().save(`dashboard-${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   return (

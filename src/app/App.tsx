@@ -6,6 +6,7 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { Intervencoes } from './components/Intervencoes';
 import { Clientes } from './components/Clientes';
+import { Utilizadores } from './components/Utilizadores';
 import { Empresas } from './components/Empresas';
 import { Tecnicos } from './components/Tecnicos';
 import { Contratos } from './components/Contratos';
@@ -50,6 +51,11 @@ function AppContent() {
     // Clientes handles
     if (paginaAtual === 'clientes' || paginaAtual.startsWith('clientes_')) {
       return <Clientes />;
+    }
+
+    // Utilizadores handles (apenas administradores)
+    if (paginaAtual === 'utilizadores' || paginaAtual.startsWith('utilizadores_')) {
+      return <Utilizadores />;
     }
 
     if (paginaAtual === 'empresas' || paginaAtual.startsWith('empresas_')) {

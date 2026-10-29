@@ -4,6 +4,7 @@ export * from './perfil';
 export * from './clientes';
 export * from './empresas';
 export * from './tecnicos';
+export * from './utilizadores';
 export * from './contratos';
 export * from './intervencoes';
 export * from './tarefas';

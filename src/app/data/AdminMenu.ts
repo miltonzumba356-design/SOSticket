@@ -9,6 +9,7 @@ import {
   User,
   Building2,
   Calendar,
+  ShieldCheck,
   LucideIcon
 } from 'lucide-react';
 
@@ -26,8 +27,13 @@ export const adminMenu: MenuItem[] = [
     icon: LayoutDashboard,
   },
   {
-    id: 'clientes',
+    id: 'utilizadores',
     label: 'Utilizadores',
+    icon: ShieldCheck,
+  },
+  {
+    id: 'clientes',
+    label: 'Clientes',
     icon: Users,
   },
   {

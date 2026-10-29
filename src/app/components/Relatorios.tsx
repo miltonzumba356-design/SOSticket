@@ -283,11 +283,7 @@ export function Relatorios() {
   const financeiroContrato = (dados?.por_contrato || []).map((item: any) => ({ name: item.tipo_contrato || 'Sem tipo', valor: numero(item.total) }));
   const financeiroPorCliente = (dados?.por_cliente || []).map((item: any) => ({ name: item.cliente__nome || 'Sem cliente', valor: numero(item.total) }));
 
-  const imprimirRelatorio = () => {
-    window.print();
-  };
-
-  const baixarPdf = async () => {
+  const gerarPdf = () => {
     const filtros = [
       ['empresas', 'contratos'].includes(tipoRelatorio) ? `Periodo: ${mesLabel(mesSelecionado)}` : '',
       ['empresas', 'contratos'].includes(tipoRelatorio) ? `Empresa: ${empresaSelecionada === 'todas' ? 'Todas as empresas' : empresas.find((empresa) => empresa.id === empresaSelecionada)?.nome || empresaSelecionada}` : '',
@@ -380,8 +376,23 @@ export function Relatorios() {
       tabelas: tabelasPorTipo[tipoRelatorio],
     });
 
-    pdf.save(`relatorio-${tipoRelatorio}-${new Date().toISOString().slice(0, 10)}.pdf`);
+    return pdf;
   };
+
+  const nomeFicheiroPdf = () => `relatorio-${tipoRelatorio}-${new Date().toISOString().slice(0, 10)}.pdf`;
+
+  const baixarPdf = () => {
+    gerarPdf().save(nomeFicheiroPdf());
+  };
+
+  const imprimirRelatorio = () => {
+    const pdf = gerarPdf();
+    pdf.autoPrint();
+    const url = URL.createObjectURL(pdf.output('blob'));
+    const janela = window.open(url, '_blank');
+    if (!janela) window.alert('O browser bloqueou a janela de impressão. Permita pop-ups para este site.');
+  };
+
 
   return (
     <div className="space-y-6 pb-12">
@@ -529,6 +540,7 @@ export function Relatorios() {
           )}
         </div>
       )}
+
     </div>
   );
 }

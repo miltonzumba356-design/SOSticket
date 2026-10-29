@@ -1,5 +1,5 @@
 import { Usuario } from '../../../types/api';
-import { create, fetchAPI, update } from '../client';
+import { ApiError, create, fetchAPI, update } from '../client';
 import { clientesService } from '../clientes';
 import { tecnicosService } from '../tecnicos';
 
@@ -39,7 +39,10 @@ export const utilizadoresService = {
     const adicionar = (itens: any[], perfilPadrao?: FuncaoUtilizador) => {
       itens.forEach((item) => {
         if (!item?.id) return;
-        porId.set(String(item.id), { ...porId.get(String(item.id)), ...item, perfil: item.perfil || perfilPadrao });
+        const atual = porId.get(String(item.id));
+        // A função já conhecida nunca é substituída: as listas de técnicos e clientes só
+        // servem de valor por defeito quando a função não vem indicada.
+        porId.set(String(item.id), { ...atual, ...item, perfil: atual?.perfil || item.perfil || perfilPadrao });
       });
     };
 
@@ -50,7 +53,48 @@ export const utilizadoresService = {
     return Array.from(porId.values()).filter((utilizador) => !utilizador.is_deleted);
   },
 
-  criar: (dados: NovoUtilizador) => create<Usuario>('/auth/register', dados),
+  /**
+   * O servidor em produção rejeita `POST /auth/register/` (só aceita GET), apesar de a documentação o
+   * listar. Técnicos e clientes são por isso criados nas suas rotas próprias, que aceitam POST;
+   * só os administradores dependem de `/auth/register/`.
+   */
+  async criar(dados: NovoUtilizador): Promise<Usuario> {
+    if (dados.perfil === 'tecnico') {
+      return tecnicosService.criar({
+        nome: dados.nome,
+        email: dados.email,
+        password: dados.password,
+        telefone: dados.telefone,
+        especialidades: dados.especialidades,
+        data_contratacao: dados.data_contratacao,
+        status: dados.status,
+      } as any) as Promise<Usuario>;
+    }
+
+    if (dados.perfil === 'cliente') {
+      return clientesService.criar({
+        nome: dados.nome,
+        email: dados.email,
+        password: dados.password,
+        telefone: dados.telefone,
+        empresa: dados.empresa,
+        status: dados.status,
+      }) as Promise<Usuario>;
+    }
+
+    try {
+      return await create<Usuario>('/auth/register', dados);
+    } catch (error: any) {
+      if (error?.status === 405) {
+        throw new ApiError(
+          405,
+          'O servidor não permite criar administradores: a rota POST /api/v1/auth/register/ só aceita GET. É preciso ativá-la no backend.',
+          error.data
+        );
+      }
+      throw error;
+    }
+  },
 
   // A documentação da API ainda não tem este pedido: o servidor responde 404/405 até ser criado.
   alterarFuncao: (id: string, perfil: FuncaoUtilizador) =>

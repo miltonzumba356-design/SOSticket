@@ -70,7 +70,13 @@ export function Utilizadores() {
     setCarregando(true);
     setErro('');
     try {
-      setUtilizadores(await utilizadoresService.listar());
+      const lista = await utilizadoresService.listar();
+      // A sessão sabe sempre qual é a função de quem está autenticado.
+      setUtilizadores(
+        lista.map((item) =>
+          usuario && String(item.id) === String(usuario.id) ? { ...item, perfil: usuario.perfil } : item
+        )
+      );
     } catch (error: any) {
       console.error('Erro ao carregar utilizadores:', error);
       setErro(error?.message || 'Não foi possível carregar os utilizadores.');

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Cliente, ClienteRequest, Empresa } from '../types/api';
 import { clientesService, empresasService } from '../services/api';
 import { Avatar } from './Avatar';
+import { CampoPassword } from './CampoPassword';
 import { 
   Search, 
   Plus, 
@@ -501,8 +502,7 @@ export function Clientes() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-bold text-gray-700">Password *</label>
-                  <input 
-                    type="password" 
+                  <CampoPassword
                     name="password"
                     required={!clienteEdicao}
                     value={formData.password}

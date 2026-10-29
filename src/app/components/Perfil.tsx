@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCronometro } from '../contexts/CronometroContext';
 import { perfilService } from '../services/api';
 import { Avatar } from './Avatar';
+import { CampoPassword } from './CampoPassword';
 import { invalidarDiretorioAvatares } from '../utils/diretorioAvatares';
 import { RecortarFotoModal } from './RecortarFotoModal';
 import { Usuario } from '../types/api';
@@ -395,14 +396,24 @@ function InputField({
   return (
     <div className="space-y-2">
       <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">{label}</label>
-      <input
-        type={type}
-        value={value || ''}
-        onChange={(event) => onChange?.(event.target.value)}
-        disabled={disabled}
-        required={required}
-        className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-sm font-medium text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-      />
+      {type === 'password' ? (
+        <CampoPassword
+          value={value || ''}
+          onChange={(event) => onChange?.(event.target.value)}
+          disabled={disabled}
+          required={required}
+          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-sm font-medium text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+        />
+      ) : (
+        <input
+          type={type}
+          value={value || ''}
+          onChange={(event) => onChange?.(event.target.value)}
+          disabled={disabled}
+          required={required}
+          className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-sm font-medium text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+        />
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { empresasService, FuncaoUtilizador, utilizadoresService } from '../servi
 import { useAuth } from '../contexts/AuthContext';
 import { Empresa, Usuario } from '../types/api';
 import { AvatarUtilizador } from './Avatar';
+import { CampoPassword } from './CampoPassword';
 
 const FUNCOES: Array<{ valor: FuncaoUtilizador; rotulo: string; selo: string }> = [
   { valor: 'admin', rotulo: 'Administrador', selo: 'bg-purple-50 text-purple-700 border border-purple-200' },
@@ -392,7 +393,7 @@ export function Utilizadores() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-bold text-gray-700">Palavra-passe *</label>
-                  <input required type="password" minLength={6} value={formulario.password} onChange={(e) => mudarCampo('password', e.target.value)} className={campo} placeholder="••••••••" />
+                  <CampoPassword required value={formulario.password} onChange={(e) => mudarCampo('password', e.target.value)} className={campo} placeholder="••••••••" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-bold text-gray-700">Telefone{formulario.perfil !== 'admin' ? ' *' : ''}</label>

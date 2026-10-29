@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { CampoPassword } from './CampoPassword';
 import { AlertCircle, User, Mail, Lock, Phone, Building2, CreditCard, ChevronRight, Check, Server, Monitor, Cpu } from 'lucide-react';
 
 export function Register({ onBackToLogin }: { onBackToLogin: () => void }) {
@@ -217,15 +218,26 @@ function InputGroup({ id, label, icon: Icon, value, onChange, placeholder, type 
         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors">
           <Icon className="w-4 h-4" />
         </div>
-        <input
-          id={id}
-          type={type}
-          value={value}
-          onChange={onChange}
-          required
-          className="w-full pl-11 pr-4 py-3 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-600 focus:ring-0 transition-all text-sm font-medium text-gray-700 placeholder-gray-300"
-          placeholder={placeholder}
-        />
+        {type === 'password' ? (
+          <CampoPassword
+            id={id}
+            value={value}
+            onChange={onChange}
+            required
+            className="w-full pl-11 pr-4 py-3 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-600 focus:ring-0 transition-all text-sm font-medium text-gray-700 placeholder-gray-300"
+            placeholder={placeholder}
+          />
+        ) : (
+          <input
+            id={id}
+            type={type}
+            value={value}
+            onChange={onChange}
+            required
+            className="w-full pl-11 pr-4 py-3 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-600 focus:ring-0 transition-all text-sm font-medium text-gray-700 placeholder-gray-300"
+            placeholder={placeholder}
+          />
+        )}
       </div>
     </div>
   );

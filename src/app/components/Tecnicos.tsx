@@ -5,6 +5,7 @@ import { tecnicosService } from '../services/api';
 import { formatarHoras } from '../utils/formatters';
 import { imprimirRelatorioSemanal, paraInputData } from '../utils/relatorioSemanal';
 import { Avatar, AvatarUtilizador } from './Avatar';
+import { CampoPassword } from './CampoPassword';
 import { 
   Plus, 
   Search, 
@@ -443,8 +444,7 @@ export function Tecnicos() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-bold text-gray-700">{tecnicoEmEdicao ? 'Nova Password (opcional)' : 'Password *'}</label>
-                  <input
-                    type="password"
+                  <CampoPassword
                     name="password"
                     required={!tecnicoEmEdicao}
                     value={formData.password}

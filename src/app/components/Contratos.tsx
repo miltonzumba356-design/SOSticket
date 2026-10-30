@@ -43,6 +43,41 @@ function escapeHtml(value: unknown) {
     .replace(/'/g, '&#039;');
 }
 
+const ROTULOS_ESTADO: Record<string, string> = {
+  activo: 'Ativo',
+  ativo: 'Ativo',
+  expirado: 'Expirado',
+  cancelado: 'Cancelado',
+};
+
+const ROTULOS_PAGAMENTO: Record<string, string> = {
+  horas: 'Pacote de horas',
+  mensal: 'Mensal',
+  anual: 'Anual',
+};
+
+const ROTULOS_TIPO_CONTRATO: Record<string, string> = {
+  'assistencia tecnica': 'Assistência técnica',
+  suporte: 'Suporte técnico',
+  'instalação': 'Instalação',
+  'manutencao preventiva': 'Manutenção preventiva',
+  'manutencao corretiva': 'Manutenção corretiva',
+  'servico avulso': 'Serviço avulso',
+  outros: 'Outros',
+};
+
+function rotuloEstado(status?: string) {
+  return ROTULOS_ESTADO[status || 'ativo'] || status || 'Ativo';
+}
+
+function rotuloPagamento(valor?: string) {
+  return (valor && ROTULOS_PAGAMENTO[valor]) || valor || '-';
+}
+
+function rotuloTipoContrato(valor?: string) {
+  return (valor && ROTULOS_TIPO_CONTRATO[valor]) || valor || '-';
+}
+
 function formatarData(data?: string) {
   if (!data) return '-';
   return new Date(data).toLocaleDateString('pt-PT');
@@ -59,24 +94,24 @@ function contratoHtml(contrato: Contrato, autoPrint = false) {
   <style>
     @page { size: A4; margin: 32px; }
     body { font-family: "Segoe UI", Arial, sans-serif; color: #1e293b; font-size: 13px; line-height: 1.65; background: #f8fafc; }
-    .document { background: #fff; padding: 42px; border-radius: 18px; }
-    .header { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 24px; margin-bottom: 28px; border-bottom: 2px solid #e2e8f0; }
+    .document { background: #fff; padding: 32px 40px; border-radius: 18px; }
+    .header { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 18px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
     h1 { margin: 0; color: #2563eb; font-size: 30px; }
     h2 { margin: 0; color: #0f172a; font-size: 20px; }
     .muted { color: #64748b; }
     .contacts { margin-top: 18px; font-size: 12px; color: #475569; }
-    .section { margin-bottom: 32px; }
-    .section-title { font-size: 15px; font-weight: 700; color: #2563eb; margin-bottom: 16px; padding-left: 12px; border-left: 4px solid #2563eb; }
+    .section { margin-bottom: 22px; }
+    .section-title { font-size: 15px; font-weight: 700; color: #2563eb; margin-bottom: 12px; padding-left: 12px; border-left: 4px solid #2563eb; }
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .card { background: #f8fafc; padding: 16px; border-radius: 14px; }
+    .card { background: #f8fafc; padding: 12px 16px; border-radius: 14px; }
     .label { font-size: 11px; color: #64748b; text-transform: uppercase; }
     .value { font-size: 14px; font-weight: 700; color: #0f172a; margin-top: 5px; }
     .status { display: inline-block; padding: 6px 12px; border-radius: 999px; background: #dbeafe; color: #1d4ed8; font-weight: 700; font-size: 11px; }
     .observacoes { background: #f8fafc; padding: 18px; border-radius: 14px; min-height: 64px; }
-    .assinaturas { margin-top: 70px; display: flex; justify-content: space-between; }
+    .assinaturas { margin-top: 52px; display: flex; justify-content: space-between; }
     .assinatura { width: 240px; text-align: center; }
     .linha { border-top: 1px solid #94a3b8; padding-top: 8px; color: #475569; }
-    .footer { margin-top: 46px; text-align: center; color: #94a3b8; font-size: 11px; }
+    .footer { margin-top: 30px; text-align: center; color: #94a3b8; font-size: 11px; }
   </style>
 </head>
 <body>
@@ -84,7 +119,7 @@ function contratoHtml(contrato: Contrato, autoPrint = false) {
     <div class="header">
       <div>
         <h1>SOSTicket</h1>
-        <p class="muted">AssistÃªncia TÃ©cnica e Consultoria</p>
+        <p class="muted">Assistência Técnica e Consultoria</p>
         <div class="contacts">
           <div><strong>Tel:</strong> +244 9XX XXX XXX</div>
           <div><strong>Email:</strong> contacto@empresa.com</div>
@@ -92,31 +127,31 @@ function contratoHtml(contrato: Contrato, autoPrint = false) {
         </div>
       </div>
       <div style="text-align:right">
-        <h2>RelatÃ³rio de Contrato</h2>
+        <h2>Relatório de contrato</h2>
         <p class="muted">${escapeHtml(contrato.numero || contrato.id)}</p>
       </div>
     </div>
     <div class="section">
-      <div class="section-title">Dados do Contrato</div>
+      <div class="section-title">Dados do contrato</div>
       <div class="info-grid">
         <div class="card"><div class="label">Empresa</div><div class="value">${escapeHtml(empresa)}</div></div>
-        <div class="card"><div class="label">Tipo</div><div class="value">${escapeHtml(contrato.tipo_contrato)}</div></div>
-        <div class="card"><div class="label">Pagamento</div><div class="value">${escapeHtml(contrato.tipo_de_pagamento || contrato.tipo)}</div></div>
-        <div class="card"><div class="label">Estado</div><div class="value"><span class="status">${escapeHtml(contrato.status)}</span></div></div>
-        <div class="card"><div class="label">Horas Contratadas</div><div class="value">${escapeHtml(contrato.horas_contratadas)}</div></div>
-        <div class="card"><div class="label">Horas Utilizadas</div><div class="value">${escapeHtml(contrato.horas_utilizadas)}</div></div>
-        <div class="card"><div class="label">Valor Hora</div><div class="value">${escapeHtml(contrato.valor_hora)} Kz</div></div>
-        <div class="card"><div class="label">Valor Total</div><div class="value">${escapeHtml(contrato.valor_total)} Kz</div></div>
-        <div class="card"><div class="label">InÃ­cio</div><div class="value">${formatarData(contrato.data_inicio)}</div></div>
+        <div class="card"><div class="label">Tipo</div><div class="value">${escapeHtml(rotuloTipoContrato(contrato.tipo_contrato))}</div></div>
+        <div class="card"><div class="label">Pagamento</div><div class="value">${escapeHtml(rotuloPagamento(contrato.tipo_de_pagamento || contrato.tipo))}</div></div>
+        <div class="card"><div class="label">Estado</div><div class="value"><span class="status">${escapeHtml(rotuloEstado(contrato.status))}</span></div></div>
+        <div class="card"><div class="label">Horas contratadas</div><div class="value">${escapeHtml(contrato.horas_contratadas)}</div></div>
+        <div class="card"><div class="label">Horas utilizadas</div><div class="value">${escapeHtml(contrato.horas_utilizadas)}</div></div>
+        <div class="card"><div class="label">Valor por hora</div><div class="value">${escapeHtml(contrato.valor_hora)} Kz</div></div>
+        <div class="card"><div class="label">Valor total</div><div class="value">${escapeHtml(contrato.valor_total)} Kz</div></div>
+        <div class="card"><div class="label">Início</div><div class="value">${formatarData(contrato.data_inicio)}</div></div>
         <div class="card"><div class="label">Fim</div><div class="value">${formatarData(contrato.data_fim)}</div></div>
       </div>
     </div>
     <div class="section">
-      <div class="section-title">ObservaÃ§Ãµes</div>
-      <div class="observacoes">${escapeHtml(contrato.observacoes || 'Sem observaÃ§Ãµes.')}</div>
+      <div class="section-title">Observações</div>
+      <div class="observacoes">${escapeHtml(contrato.observacoes || 'Sem observações.')}</div>
     </div>
     <div class="assinaturas">
-      <div class="assinatura"><div class="linha">ResponsÃ¡vel TÃ©cnico</div></div>
+      <div class="assinatura"><div class="linha">Responsável Técnico</div></div>
       <div class="assinatura"><div class="linha">Cliente</div></div>
     </div>
     <div class="footer">Documento gerado automaticamente pelo sistema SOSTicket.</div>
@@ -143,7 +178,7 @@ export function Contratos() {
   const [contratoDetalhe, setContratoDetalhe] = useState<Contrato | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-  // Estado do formulÃ¡rio de novo contrato
+  // Estado do formulário de novo contrato
   const [formData, setFormData] = useState({
     empresa_id: '',
     tipo: 'horas' as 'horas' | 'mensal' | 'anual',
@@ -175,7 +210,7 @@ export function Contratos() {
       setTotalPaginas((response as any)?.pagination?.total_pages || (response as any)?.total_pages || 1);
     } catch (error: any) {
       console.error('Erro ao carregar contratos:', error);
-      setErro('NÃ£o foi possÃ­vel carregar os contratos.');
+      setErro('Não foi possível carregar os contratos.');
     } finally {
       setCarregando(false);
     }
@@ -243,14 +278,14 @@ export function Contratos() {
     try {
       await contratosService.criar({
         empresa_id: formData.empresa_id,
-        tipo_contrato: 'suporte', // Valor padrÃ£o ou vindo do form
+        tipo_contrato: 'suporte', // Valor padrão ou vindo do form
         tipo_de_pagamento: formData.tipo as any,
         horas_contratadas: String(formData.horas_contratadas),
         valor_total: String(formData.valor_total),
         data_inicio: formData.data_inicio,
         data_fim: formData.data_fim,
         status: formData.status as any,
-        descricao_contrato: formData.descricao_contrato.trim() || 'Contrato de suporte tÃ©cnico.',
+        descricao_contrato: formData.descricao_contrato.trim() || 'Contrato de suporte técnico.',
         observacoes: formData.observacoes
       });
       
@@ -297,7 +332,7 @@ export function Contratos() {
   const handleRenovarContrato = async (contrato: Contrato) => {
     const empresaId = contrato.empresa_id || getEmpresaId(contrato.empresa_detalhe) || getEmpresaId(contrato.cliente);
     if (!empresaId) {
-      setErro('NÃ£o foi possÃ­vel identificar a empresa deste contrato para renovar.');
+      setErro('Não foi possível identificar a empresa deste contrato para renovar.');
       return;
     }
 
@@ -360,7 +395,7 @@ export function Contratos() {
       await carregou;
 
       const documento = iframe.contentDocument;
-      if (!documento?.body) throw new Error('NÃ£o foi possÃ­vel preparar o contrato para PDF.');
+      if (!documento?.body) throw new Error('Não foi possível preparar o contrato para PDF.');
 
       const canvas = await html2canvas(documento.body, {
         scale: 2,
@@ -371,21 +406,19 @@ export function Contratos() {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const image = canvas.toDataURL('image/png');
 
-      let position = 0;
-      let remainingHeight = imgHeight;
-      pdf.addImage(image, 'PNG', 0, position, imgWidth, imgHeight);
-      remainingHeight -= pageHeight;
-
-      while (remainingHeight > 0) {
-        position = remainingHeight - imgHeight;
-        pdf.addPage();
-        pdf.addImage(image, 'PNG', 0, position, imgWidth, imgHeight);
-        remainingHeight -= pageHeight;
+      // O contrato ocupa uma única página A4: se for mais alto do que a folha, a imagem é reduzida.
+      let imgWidth = pageWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+      if (imgHeight > pageHeight) {
+        imgHeight = pageHeight;
+        imgWidth = (canvas.width * imgHeight) / canvas.height;
       }
+
+      pdf.setFillColor(248, 250, 252);
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+      pdf.addImage(image, 'PNG', (pageWidth - imgWidth) / 2, 0, imgWidth, imgHeight);
 
       pdf.save(`contrato_${contrato.numero || contrato.id.substring(0, 8)}.pdf`);
     } catch (err: any) {
@@ -415,8 +448,8 @@ export function Contratos() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">GestÃ£o de Contratos</h2>
-          <p className="text-sm text-gray-500">Controle de pacotes de horas e mensalidades.</p>
+          <h2 className="text-2xl font-bold text-gray-900">Gestão de Contratos</h2>
+          <p className="text-sm text-gray-500">Controlo de pacotes de horas e mensalidades.</p>
         </div>
         {isAdmin && (
           <button 
@@ -424,7 +457,7 @@ export function Contratos() {
             className="flex items-center gap-2 px-4 py-2 bg-theme-primary text-white rounded-lg hover:bg-theme-primary-hover transition-all shadow-md shadow-indigo-100"
           >
             <Plus className="w-5 h-5" />
-            <span>Novo Contrato</span>
+            <span>Novo contrato</span>
           </button>
         )}
       </div>
@@ -437,7 +470,7 @@ export function Contratos() {
             type="text" 
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por nÃºmero ou cliente..." 
+            placeholder="Pesquisar por número ou cliente..." 
             className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-theme-primary transition-all"
           />
         </div>
@@ -447,7 +480,7 @@ export function Contratos() {
             onChange={(e) => setFiltroStatus(e.target.value)}
             className="flex-1 md:flex-none bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-theme-primary text-gray-600"
           >
-            <option value="">Todos Status</option>
+            <option value="">Todos os estados</option>
             <option value="activo">Ativos</option>
             <option value="expirado">Expirados</option>
             <option value="cancelado">Cancelados</option>
@@ -487,17 +520,17 @@ export function Contratos() {
                     </div>
                   </div>
                   <span className={`px-3 py-1 text-xs font-bold rounded-full bg-${statusCor}-50 text-${statusCor}-600 border border-${statusCor}-100`}>
-                    {contrato.status?.toUpperCase() || 'ACTIVO'}
+                    {rotuloEstado(contrato.status).toUpperCase()}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-8">
                   <div className="space-y-1">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo</p>
-                    <p className="text-sm font-bold text-gray-900 capitalize">{contrato.tipo_contrato}</p>
+                    <p className="text-sm font-bold text-gray-900">{rotuloTipoContrato(contrato.tipo_contrato)}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Valor Total</p>
+                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Valor total</p>
                     <p className="text-sm font-bold text-gray-900">{contrato.valor_total} Kz</p>
                   </div>
                   <div className="space-y-1 hidden sm:block">
@@ -511,7 +544,7 @@ export function Contratos() {
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-600">Uso de Horas: <span className="font-bold text-gray-900">{formatarHoras(contrato.horas_utilizadas)}</span> / {formatarHoras(contrato.horas_contratadas)}</span>
+                      <span className="text-gray-600">Uso de horas: <span className="font-bold text-gray-900">{formatarHoras(contrato.horas_utilizadas)}</span> / {formatarHoras(contrato.horas_contratadas)}</span>
                       </div>
                       <span className={`font-bold ${percHoras > 90 ? 'text-red-600' : percHoras > 70 ? 'text-amber-600' : 'text-emerald-600'}`}>{percHoras}%</span>
                     </div>
@@ -533,7 +566,7 @@ export function Contratos() {
                     onClick={() => handleVerDetalhes(contrato.id)}
                     className="px-3 py-2 text-sm font-bold text-theme-primary bg-white border border-theme-primary/20 hover:bg-theme-primary-light rounded-lg flex items-center gap-1"
                   >
-                    Ver Detalhes <ArrowRight className="w-4 h-4" />
+                    Ver detalhes <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -561,7 +594,7 @@ export function Contratos() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900">Novo Contrato</h3>
+              <h3 className="text-xl font-bold text-gray-900">Novo contrato</h3>
               <button onClick={() => setExibirModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
@@ -585,7 +618,7 @@ export function Contratos() {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-bold text-gray-700">Tipo de Contrato *</label>
+                  <label className="text-sm font-bold text-gray-700">Tipo de pagamento *</label>
                   <select 
                     name="tipo"
                     required
@@ -593,14 +626,14 @@ export function Contratos() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-theme-primary bg-white"
                   >
-                    <option value="horas">Horas</option>
+                    <option value="horas">Pacote de horas</option>
                     <option value="mensal">Mensal</option>
                     <option value="anual">Anual</option>
                   </select>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-sm font-bold text-gray-700">Horas Contratadas *</label>
+                    <label className="text-sm font-bold text-gray-700">Horas contratadas *</label>
                     <input 
                       type="text" 
                       name="horas_contratadas"
@@ -611,7 +644,7 @@ export function Contratos() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-bold text-gray-700">Horas Utilizadas</label>
+                    <label className="text-sm font-bold text-gray-700">Horas utilizadas</label>
                     <input 
                       type="text" 
                       name="horas_utilizadas"
@@ -622,7 +655,7 @@ export function Contratos() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-bold text-gray-700">Valor Total (Kz) *</label>
+                  <label className="text-sm font-bold text-gray-700">Valor total (Kz) *</label>
                   <input 
                     type="text" 
                     name="valor_total"
@@ -633,20 +666,20 @@ export function Contratos() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-bold text-gray-700">DescriÃ§Ã£o do Contrato *</label>
+                  <label className="text-sm font-bold text-gray-700">Descrição do contrato *</label>
                   <textarea
                     name="descricao_contrato"
                     required
                     value={formData.descricao_contrato}
                     onChange={handleInputChange}
                     rows={3}
-                    placeholder="Ex.: Contrato de suporte tÃ©cnico e manutenÃ§Ã£o."
+                    placeholder="Ex.: Contrato de suporte técnico e manutenção."
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-theme-primary"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-sm font-bold text-gray-700">Data InÃ­cio *</label>
+                    <label className="text-sm font-bold text-gray-700">Data de início *</label>
                     <input 
                       type="date" 
                       name="data_inicio"
@@ -657,7 +690,7 @@ export function Contratos() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-bold text-gray-700">Data Fim *</label>
+                    <label className="text-sm font-bold text-gray-700">Data de fim *</label>
                     <input 
                       type="date" 
                       name="data_fim"
@@ -669,7 +702,7 @@ export function Contratos() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-bold text-gray-700">ObservaÃ§Ãµes</label>
+                  <label className="text-sm font-bold text-gray-700">Observações</label>
                   <textarea 
                     name="observacoes"
                     value={formData.observacoes}
@@ -695,22 +728,22 @@ export function Contratos() {
                   {status === 'loading' ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Salvando...</span>
+                      <span>A guardar...</span>
                     </>
                   ) : status === 'success' ? (
                     <>
                       <CheckCircle2 className="w-5 h-5" />
-                      <span>Contrato Ativo!</span>
+                      <span>Contrato criado!</span>
                     </>
                   ) : status === 'error' ? (
                     <>
                       <AlertCircle className="w-5 h-5" />
-                      <span>Erro ao Salvar</span>
+                      <span>Erro ao guardar</span>
                     </>
                   ) : (
                     <>
                       <Plus className="w-5 h-5" />
-                      <span>Salvar Contrato</span>
+                      <span>Guardar contrato</span>
                     </>
                   )}
                 </button>
@@ -720,11 +753,11 @@ export function Contratos() {
         </div>
       )}
 
-      {/* PaginaÃ§Ã£o */}
+      {/* Paginação */}
       {totalPaginas > 1 && (
         <div className="mt-8 flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
           <p className="text-xs font-black text-gray-400 uppercase tracking-widest ml-2">
-            PÃ¡gina {pagina} de {totalPaginas}
+            Página {pagina} de {totalPaginas}
           </p>
           <div className="flex items-center gap-2">
             <button 
@@ -755,7 +788,7 @@ export function Contratos() {
                   <FileText className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black">Detalhes do Contrato</h3>
+                  <h3 className="text-xl font-black">Detalhes do contrato</h3>
                   <p className="text-xs font-bold text-white/80 uppercase tracking-widest">
                     #{contratoDetalhe.id?.substring(0, 8) || 'CONTRATO'}
                   </p>
@@ -779,27 +812,27 @@ export function Contratos() {
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status Atual</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Estado atual</p>
                   <span className={`px-4 py-1.5 text-xs font-black rounded-full uppercase tracking-tighter ${
                     contratoDetalhe.status === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
                   }`}>
-                    {contratoDetalhe.status}
+                    {rotuloEstado(contratoDetalhe.status)}
                   </span>
                 </div>
               </div>
 
-              {/* Grid de InformaÃ§Ãµes Principais */}
+              {/* Grid de Informações Principais */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo</p>
-                  <p className="text-sm font-bold text-gray-900 capitalize">{contratoDetalhe.tipo_contrato}</p>
+                  <p className="text-sm font-bold text-gray-900">{rotuloTipoContrato(contratoDetalhe.tipo_contrato)}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pagamento</p>
-                  <p className="text-sm font-bold text-gray-900 capitalize">{contratoDetalhe.tipo_de_pagamento}</p>
+                  <p className="text-sm font-bold text-gray-900">{rotuloPagamento(contratoDetalhe.tipo_de_pagamento)}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">InÃ­cio</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Início</p>
                     <p className="text-sm font-bold text-gray-900">
                       {contratoDetalhe.data_inicio ? new Date(contratoDetalhe.data_inicio).toLocaleDateString('pt-PT') : '-'}
                     </p>
@@ -814,26 +847,26 @@ export function Contratos() {
 
               <hr className="border-gray-100" />
 
-              {/* EstatÃ­sticas de Horas e Valores */}
+              {/* Estatísticas de Horas e Valores */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
                   <div className="flex items-center gap-2 mb-2">
                     <Clock className="w-4 h-4 text-indigo-600" />
-                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Horas Contratadas</p>
+                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Horas contratadas</p>
                   </div>
                   <p className="text-xl font-black text-indigo-700">{formatarHoras(contratoDetalhe.horas_contratadas)}</p>
                 </div>
                 <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-4 h-4 text-amber-600" />
-                    <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Horas Utilizadas</p>
+                    <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Horas utilizadas</p>
                   </div>
                   <p className="text-xl font-black text-amber-700">{formatarHoras(contratoDetalhe.horas_utilizadas)}</p>
                 </div>
                 <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Horas DisponÃ­veis</p>
+                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Horas disponíveis</p>
                   </div>
                   <p className="text-xl font-black text-emerald-700">{formatarHoras(contratoDetalhe.horas_disponiveis)}</p>
                 </div>
@@ -841,18 +874,18 @@ export function Contratos() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="p-6 bg-gray-50 rounded-2xl">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Valor Total do Contrato</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Valor total do contrato</p>
                   <p className="text-2xl font-black text-gray-900">{Number(contratoDetalhe.valor_total).toLocaleString()} Kz</p>
                 </div>
                 <div className="p-6 bg-gray-50 rounded-2xl">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Valor p/ Hora</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Valor por hora</p>
                   <p className="text-2xl font-black text-gray-900">{Number(contratoDetalhe.valor_hora).toLocaleString()} Kz</p>
                 </div>
               </div>
 
               {contratoDetalhe.observacoes && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ObservaÃ§Ãµes Internas</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Observações internas</p>
                   <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-2xl italic">"{contratoDetalhe.observacoes}"</p>
                 </div>
               )}
@@ -869,7 +902,7 @@ export function Contratos() {
                 onClick={() => setExibirModalDetalhes(false)}
                 className="px-8 py-3 bg-theme-primary text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-indigo-100 hover:bg-theme-primary-hover transition-all"
               >
-                Fechar Detalhes
+                Fechar
               </button>
             </div>
           </div>
